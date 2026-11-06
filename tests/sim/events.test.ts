@@ -48,3 +48,4 @@ describe('Events System - Milestone 4 Specification', () => {
     expect(res.state.activeEvent).toBeNull();
   });
 });
+

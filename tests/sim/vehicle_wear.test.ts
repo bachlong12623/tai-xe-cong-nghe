@@ -33,3 +33,4 @@ describe('Vehicle Wear & Maintenance - Section 6 Specification', () => {
     expect(res.cost).toBe(0);
   });
 });
+

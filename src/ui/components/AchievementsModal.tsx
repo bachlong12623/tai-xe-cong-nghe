@@ -81,3 +81,4 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({ unlockedId
     </div>
   );
 };
+

@@ -134,3 +134,4 @@ export function applyEventOption(
 
   return { state: s, logText };
 }
+

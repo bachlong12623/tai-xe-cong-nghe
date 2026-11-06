@@ -85,3 +85,4 @@ export function evaluateAchievements(state: GameState): {
 
   return { unlockedNewIds: newlyUnlocked, logsToAdd };
 }
+

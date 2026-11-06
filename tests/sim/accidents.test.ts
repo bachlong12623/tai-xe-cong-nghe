@@ -51,3 +51,4 @@ describe('Accidents & Traffic Hazards - Section 10 Specification', () => {
     expect(calculateTravelDistance(baseDist, 'dry')).toBeCloseTo(12.5, 1);
   });
 });
+

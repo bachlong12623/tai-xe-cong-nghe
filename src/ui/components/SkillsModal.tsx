@@ -132,3 +132,4 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({ skills, onClose }) => 
     </div>
   );
 };
+

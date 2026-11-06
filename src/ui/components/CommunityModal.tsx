@@ -128,3 +128,4 @@ export const CommunityModal: React.FC<CommunityModalProps> = ({ messages, active
     </div>
   );
 };
+
