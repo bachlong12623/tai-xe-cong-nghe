@@ -50,3 +50,4 @@ export function nextGaussian(rng: RngState, mean = 0, stdev = 1): number {
   const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
   return mean + z0 * stdev;
 }
+

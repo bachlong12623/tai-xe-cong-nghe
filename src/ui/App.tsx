@@ -6,6 +6,7 @@ import { CityMap } from './components/CityMap';
 import { DriverAppScreen } from './components/DriverAppScreen';
 import { EventLogPanel } from './components/EventLogPanel';
 import { EatModal, DrinkModal, SleepModal } from './components/ActionModals';
+import { DailySummaryModal } from './components/DailySummaryModal';
 import { User, Map, Smartphone, Terminal } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -119,7 +120,14 @@ export const App: React.FC = () => {
         onClose={() => setIsSleepModalOpen(false)}
         dispatch={dispatch}
       />
+      {/* Daily Summary Modal */}
+      <DailySummaryModal
+        isOpen={view.showDailySummaryModal}
+        summary={view.pendingSummary}
+        onClose={() => dispatch({ t: 'CLOSE_SUMMARY_MODAL' })}
+      />
     </div>
   );
 };
 export default App;
+

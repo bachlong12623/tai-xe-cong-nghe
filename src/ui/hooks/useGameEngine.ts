@@ -35,6 +35,17 @@ export function useGameEngine() {
     return () => clearInterval(timer);
   }, [gameState.speed]);
 
+  // Real-time 12s countdown timer for pending trip offer
+  useEffect(() => {
+    if (!gameState.app.currentOffer) return;
+
+    const offerTimer = setInterval(() => {
+      sendAction({ t: 'TICK_OFFER_COUNTDOWN' });
+    }, 1000);
+
+    return () => clearInterval(offerTimer);
+  }, [gameState.app.currentOffer, sendAction]);
+
   // Periodic autosave (every 30 seconds real time)
   useEffect(() => {
     const saveTimer = setInterval(() => {
@@ -58,3 +69,4 @@ export function useGameEngine() {
     },
   };
 }
+

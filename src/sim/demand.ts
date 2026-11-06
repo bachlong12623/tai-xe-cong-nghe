@@ -34,3 +34,4 @@ export function getDemandForHour(
 
   return baseRate * multiplier;
 }
+

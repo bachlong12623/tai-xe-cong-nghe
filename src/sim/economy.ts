@@ -87,3 +87,4 @@ export function generateDailySummary(
 
   return { economy: nextEconomy, summary };
 }
+

@@ -1,5 +1,5 @@
-import { GameState, Action, LogMessage } from './types';
-import { createRng } from './rng';
+import { GameState, Action, LogMessage, DailySummary } from './types';
+import { createRng, nextFloat, nextInt } from './rng';
 import { createInitialTime, advanceTime, formatGameTime, formatTime24h } from './time';
 import {
   createInitialStats,
@@ -13,6 +13,15 @@ import { createInitialVehicle, refuelVehicle } from './vehicle';
 import { createInitialEconomy, generateDailySummary } from './economy';
 import { createInitialDriverApp } from './platform';
 import { createInitialWeather, updateWeather } from './weather';
+import {
+  TripOrder,
+  generateOrderOffer,
+  evaluateOrderArrivalProbability,
+} from './orders';
+import {
+  calculateTravelTimeMinutes,
+  calculateFuelConsumed,
+} from './traffic';
 import itemsData from '../../data/items.json';
 import spotsData from '../../data/spots.json';
 import zonesData from '../../data/zones.json';
@@ -60,6 +69,8 @@ export function createGame(seed: number = Date.now()): GameState {
     napRemainingMinutes: 0,
     currentActivityLabel: null,
     activeEvent: null,
+    showDailySummaryModal: false,
+    pendingSummary: null,
   };
 }
 
@@ -76,9 +87,140 @@ export function addLog(
     text,
     type,
   };
-  // Keep last 100 logs
   const updatedLogs = [newLog, ...state.logs].slice(0, 100);
   return { ...state, logs: updatedLogs };
+}
+
+/**
+ * Advance an active trip by 1 minute.
+ */
+function advanceActiveTrip(state: GameState): GameState {
+  let s = { ...state };
+  if (!s.app.activeTrip) return s;
+
+  const trip = { ...s.app.activeTrip };
+  const isMoving = trip.stage === 'TO_PICKUP' || trip.stage === 'TO_DROPOFF';
+
+  // Fuel consumption and odometer update when moving
+  if (isMoving) {
+    const totalStageDistance = trip.stage === 'TO_PICKUP' ? trip.pickupDistanceKm : trip.tripDistanceKm;
+    const minutesDiv = Math.max(1, trip.stageMinutesRemaining);
+    const kmThisMinute = totalStageDistance / minutesDiv;
+    const fuelUsed = calculateFuelConsumed(kmThisMinute, 1.9);
+
+    s.vehicle = {
+      ...s.vehicle,
+      fuelCurrent: Math.max(0, s.vehicle.fuelCurrent - fuelUsed),
+      odometerKm: s.vehicle.odometerKm + kmThisMinute,
+    };
+    s.economy = {
+      ...s.economy,
+      todayKmPassenger: s.economy.todayKmPassenger + kmThisMinute,
+    };
+
+    if (s.vehicle.fuelCurrent <= 0.2) {
+      s = addLog(s, '⚠️ Cảnh báo: Kim xăng đã về vạch đỏ! Cần tìm cây xăng gấp kẻo chết máy đẩy bộ.', 'danger');
+    }
+  }
+
+  trip.stageMinutesRemaining -= 1;
+
+  if (trip.stageMinutesRemaining <= 0) {
+    if (trip.stage === 'TO_PICKUP') {
+      if (trip.type === 'food') {
+        trip.stage = 'AT_MERCHANT_WAITING';
+        trip.stageMinutesRemaining = trip.merchantPrepMinutes || 7;
+        s.currentActivityLabel = `Chờ quán làm món (${trip.foodItems})`;
+        s = addLog(s, `Đã đến quán ăn! Đang đợi chuẩn bị món (${trip.foodItems}), dự kiến ${trip.stageMinutesRemaining} phút...`, 'info');
+      } else {
+        trip.stage = 'TO_DROPOFF';
+        const travelMins = calculateTravelTimeMinutes(
+          trip.tripDistanceKm,
+          30,
+          s.time,
+          s.weather,
+          s.stats.stamina
+        );
+        trip.stageMinutesRemaining = travelMins;
+        const dropZone = zonesData.find((z) => z.id === trip.dropoffZoneId);
+        s.currentActivityLabel = `Chở ${trip.customerName} đến ${dropZone?.name || 'điểm trả'}`;
+        s = addLog(s, `Đã đón khách ${trip.customerName} (${trip.customerProfile.label})! Bắt đầu di chuyển đến điểm trả (~${travelMins} phút)...`, 'info');
+      }
+    } else if (trip.stage === 'AT_MERCHANT_WAITING') {
+      trip.stage = 'TO_DROPOFF';
+      const travelMins = calculateTravelTimeMinutes(
+        trip.tripDistanceKm,
+        30,
+        s.time,
+        s.weather,
+        s.stats.stamina
+      );
+      trip.stageMinutesRemaining = travelMins;
+      const dropZone = zonesData.find((z) => z.id === trip.dropoffZoneId);
+      s.currentActivityLabel = `Giao đồ ăn tới ${dropZone?.name || 'khách'}`;
+      s = addLog(s, `Quán đã giao món (${trip.foodItems}) xong! Bắt đầu di chuyển giao cho khách hàng (~${travelMins} phút)...`, 'info');
+    } else if (trip.stage === 'TO_DROPOFF') {
+      // TRIP COMPLETED!
+      trip.stage = 'COMPLETED';
+      s.currentActivityLabel = null;
+      s.location.currentZoneId = trip.dropoffZoneId;
+
+      // Handle payout
+      const gross = trip.grossFare;
+      const comm = trip.platformCommission;
+      const net = trip.netFare;
+
+      if (trip.paymentMethod === 'cash') {
+        s.economy = {
+          ...s.economy,
+          cash: s.economy.cash + gross,
+          appWallet: s.economy.appWallet - comm,
+          todayRevenue: s.economy.todayRevenue + gross,
+          todayTrips: s.economy.todayTrips + 1,
+        };
+      } else {
+        s.economy = {
+          ...s.economy,
+          appWallet: s.economy.appWallet + net,
+          todayRevenue: s.economy.todayRevenue + gross,
+          todayTrips: s.economy.todayTrips + 1,
+        };
+      }
+
+      // Tip calculation
+      let tipAmount = 0;
+      if (nextFloat(s.rng) < trip.customerProfile.tipChance) {
+        tipAmount = Math.round(nextInt(s.rng, trip.customerProfile.tipMin, trip.customerProfile.tipMax) / 1000) * 1000;
+        s.economy.cash += tipAmount;
+        s.economy.todayTips += tipAmount;
+        s.stats.morale = Math.min(100, s.stats.morale + 3);
+      }
+
+      // Rating awarded
+      const ratingStars = 5;
+      const updatedHistory = [...s.app.ratingHistory.slice(1), ratingStars];
+      const avgRating = updatedHistory.reduce((a, b) => a + b, 0) / updatedHistory.length;
+
+      s.app = {
+        ...s.app,
+        ratingHistory: updatedHistory,
+        rating: Number(avgRating.toFixed(2)),
+        totalTripsCompleted: s.app.totalTripsCompleted + 1,
+        activeTrip: null,
+      };
+
+      const payNote = trip.paymentMethod === 'cash'
+        ? `Nhận tiền mặt +${gross.toLocaleString('vi-VN')}đ (ví app trừ hoa hồng -${comm.toLocaleString('vi-VN')}đ)`
+        : `Thanh toán thẻ/ví điện tử: ví app cộng +${net.toLocaleString('vi-VN')}đ`;
+
+      const tipNote = tipAmount > 0 ? ` Được khách tip thêm +${tipAmount.toLocaleString('vi-VN')}đ! 🎉` : '';
+      s = addLog(s, `✅ Hoàn thành cuốc ${trip.title}! Thu nhập thực nhận: ${net.toLocaleString('vi-VN')}đ. ${payNote}.${tipNote}`, 'success');
+      return s;
+    }
+  }
+
+  s.app = { ...s.app, activeTrip: trip };
+  return s;
 }
 
 /**
@@ -127,10 +269,11 @@ export function stepOneMinute(state: GameState): GameState {
   }
 
   // 4. Update stats decay/recovery
+  const isDrivingNow = !!(s.app.activeTrip && (s.app.activeTrip.stage === 'TO_PICKUP' || s.app.activeTrip.stage === 'TO_DROPOFF'));
   const statRes = updateStatsPerMinute(s.stats, s.time, {
-    isDriving: s.location.isTraveling,
-    isWaitingForOrder: s.app.isOnline && !s.location.isTraveling && !s.isSleeping,
-    isResting: !s.app.isOnline && !s.location.isTraveling && !s.isSleeping,
+    isDriving: isDrivingNow,
+    isWaitingForOrder: s.app.isOnline && !s.app.activeTrip && !s.isSleeping,
+    isResting: !s.app.isOnline && !s.app.activeTrip && !s.isSleeping,
     isSleeping: s.isSleeping,
     weather: s.weather,
   });
@@ -157,11 +300,39 @@ export function stepOneMinute(state: GameState): GameState {
     s.economy = summaryRes.economy;
     const summary = summaryRes.summary;
 
+    // Trigger daily summary modal & pause game
+    s.showDailySummaryModal = true;
+    s.pendingSummary = summary;
+    s.speed = 0;
+
     const summaryText = `[Tổng kết Ngày ${summary.day}]: Thu nhập thực: ${summary.netProfit.toLocaleString('vi-VN')}đ (${summary.hourlyNetProfit.toLocaleString('vi-VN')}đ/h online). Xăng: ${summary.fuelCost.toLocaleString('vi-VN')}đ, Ăn uống: ${summary.foodCost.toLocaleString('vi-VN')}đ.`;
     s = addLog(s, summaryText, summary.netProfit >= 0 ? 'success' : 'warning');
   }
 
-  // 7. Critical stats notifications (throttled)
+  // 7. Active Trip progression
+  if (s.app.activeTrip) {
+    s = advanceActiveTrip(s);
+  }
+
+  // 8. Order Dispatch generation (if online, not busy, and no pending offer)
+  if (s.app.isOnline && !s.app.activeTrip && !s.app.currentOffer && !s.isSleeping) {
+    const isCooldown = s.app.cooldownUntilMinute !== null && s.time.totalMinutes < s.app.cooldownUntilMinute;
+    if (!isCooldown) {
+      const currentSpot = spotsData.find((sp) => sp.id === s.location.currentSpotId);
+      const densityMult = currentSpot?.density === 'high' ? 1.3 : currentSpot?.density === 'low' ? 0.7 : 1.0;
+      const arrivalProb = evaluateOrderArrivalProbability(s.time, s.weather, s.app, s.location.currentZoneId, densityMult);
+
+      if (nextFloat(s.rng) < arrivalProb) {
+        const newOffer = generateOrderOffer(s.rng, s.time, s.weather, s.app, s.location.currentZoneId);
+        s.app = { ...s.app, currentOffer: newOffer };
+        // Auto return to speed 1 when order arrives as per spec
+        s.speed = 1;
+        s = addLog(s, `🔔 Nổ cuốc mới! [${newOffer.type === 'food' ? 'Giao đồ ăn' : 'Chở khách'}] - Cước: ${newOffer.grossFare.toLocaleString('vi-VN')}đ (Đếm ngược 12s)`, 'event');
+      }
+    }
+  }
+
+  // 9. Critical stats warnings (throttled)
   if (s.time.minute % 30 === 0) {
     if (s.stats.alertness < 25) {
       s = addLog(s, '⚠️ Cực kỳ buồn ngủ (Tỉnh táo < 25%)! Bạn có nguy cơ ngủ gật giữa đường. Hãy chợp mắt hoặc uống cà phê!', 'danger');
@@ -209,8 +380,68 @@ export function dispatch(state: GameState, action: Action): GameState {
     }
 
     case 'GO_OFFLINE': {
-      s.app = { ...s.app, isOnline: false };
+      s.app = { ...s.app, isOnline: false, currentOffer: null };
       return addLog(s, '⚪ Đã tắt ứng dụng: Tạm dừng nhận cuốc.', 'info');
+    }
+
+    case 'ACCEPT_OFFER': {
+      if (!s.app.currentOffer || s.app.currentOffer.id !== action.id) {
+        return s;
+      }
+      const trip = { ...s.app.currentOffer };
+      const pickupTravelTime = calculateTravelTimeMinutes(
+        trip.pickupDistanceKm,
+        30,
+        s.time,
+        s.weather,
+        s.stats.stamina
+      );
+
+      trip.stage = 'TO_PICKUP';
+      trip.stageMinutesRemaining = pickupTravelTime;
+      trip.acceptedAtMinute = s.time.totalMinutes;
+
+      const newAcceptRate = Math.min(1.0, s.app.acceptanceRate + 0.01);
+
+      s.app = {
+        ...s.app,
+        currentOffer: null,
+        activeTrip: trip,
+        acceptanceRate: Number(newAcceptRate.toFixed(2)),
+      };
+      s.currentActivityLabel = `Đón khách/lấy đồ ăn tại ${trip.pickupAddress}`;
+
+      return addLog(s, `Đã nhận cuốc ${trip.title}! Đang di chuyển đến điểm đón (${trip.pickupDistanceKm} km, ~${pickupTravelTime} phút)...`, 'info');
+    }
+
+    case 'REJECT_OFFER': {
+      if (!s.app.currentOffer) return s;
+      const newAcceptRate = Math.max(0.5, s.app.acceptanceRate - 0.02);
+      s.app = {
+        ...s.app,
+        currentOffer: null,
+        acceptanceRate: Number(newAcceptRate.toFixed(2)),
+        cooldownUntilMinute: s.time.totalMinutes + 2,
+      };
+      return addLog(s, `Đã bỏ qua cuốc xe. Tỷ lệ nhận cuốc giảm còn ${(newAcceptRate * 100).toFixed(0)}%. Tạm hoãn phát cuốc trong ít phút.`, 'warning');
+    }
+
+    case 'TICK_OFFER_COUNTDOWN': {
+      if (!s.app.currentOffer) return s;
+      const offer = { ...s.app.currentOffer };
+      offer.countdownSeconds -= 1;
+      if (offer.countdownSeconds <= 0) {
+        return dispatch(s, { t: 'REJECT_OFFER', id: offer.id });
+      }
+      s.app = { ...s.app, currentOffer: offer };
+      return s;
+    }
+
+    case 'CLOSE_SUMMARY_MODAL': {
+      s.showDailySummaryModal = false;
+      s.pendingSummary = null;
+      s.speed = 1;
+      return s;
     }
 
     case 'EAT': {
@@ -221,7 +452,6 @@ export function dispatch(state: GameState, action: Action): GameState {
         return addLog(s, `Không đủ tiền mặt để mua ${food.name} (Cần ${food.price.toLocaleString('vi-VN')}đ)!`, 'danger');
       }
 
-      // Deduct cash and track food expense
       s.economy = {
         ...s.economy,
         cash: s.economy.cash - food.price,
@@ -231,10 +461,7 @@ export function dispatch(state: GameState, action: Action): GameState {
         },
       };
 
-      // Apply stats
       s.stats = applyEatFood(s.stats, food.hungerRestore, food.moraleRestore);
-
-      // Advance game time for eating
       s = step(s, food.durationMinutes);
       return addLog(s, `Đã ăn ${food.name} (-${food.price.toLocaleString('vi-VN')}đ, mất ${food.durationMinutes} phút): No +${food.hungerRestore}.`, 'success');
     }
@@ -247,7 +474,6 @@ export function dispatch(state: GameState, action: Action): GameState {
         return addLog(s, `Không đủ tiền mặt để mua ${drink.name}!`, 'danger');
       }
 
-      // Deduct cash
       s.economy = {
         ...s.economy,
         cash: s.economy.cash - drink.price,
@@ -281,7 +507,7 @@ export function dispatch(state: GameState, action: Action): GameState {
       s.isSleeping = true;
       s.sleepTargetMinutes = sleepMinutes;
       s.currentActivityLabel = `Đang ngủ (${action.hours} giờ)`;
-      s.speed = 8; // Auto-accelerate when sleeping as specified
+      s.speed = 8;
       return addLog(s, `Bạn về phòng trọ ngả lưng ngủ ${action.hours} tiếng để nạp lại năng lượng...`, 'info');
     }
 
@@ -324,7 +550,6 @@ export function dispatch(state: GameState, action: Action): GameState {
           fuel: s.economy.todayExpenses.fuel + refuelRes.cost,
         },
       };
-      // Refuel takes 5 minutes
       s = step(s, 5);
       return addLog(
         s,
@@ -360,6 +585,10 @@ export interface ViewModel {
   appWalletFormatted: string;
   isOnline: boolean;
   activityLabel: string;
+  currentOffer: TripOrder | null;
+  activeTrip: TripOrder | null;
+  showDailySummaryModal: boolean;
+  pendingSummary: DailySummary | null;
   stats: {
     stamina: number;
     hunger: number;
@@ -410,7 +639,11 @@ export function getView(state: GameState): ViewModel {
     cashFormatted: `${state.economy.cash.toLocaleString('vi-VN')} đ`,
     appWalletFormatted: `${state.economy.appWallet.toLocaleString('vi-VN')} đ`,
     isOnline: state.app.isOnline,
-    activityLabel: state.currentActivityLabel || (state.app.isOnline ? 'Đang bật app chờ cuốc' : 'Nghỉ ngơi offline'),
+    activityLabel: state.currentActivityLabel || (state.app.isOnline ? (state.app.activeTrip ? 'Đang thực hiện cuốc' : 'Đang bật app chờ cuốc') : 'Nghỉ ngơi offline'),
+    currentOffer: state.app.currentOffer,
+    activeTrip: state.app.activeTrip,
+    showDailySummaryModal: state.showDailySummaryModal,
+    pendingSummary: state.pendingSummary,
     stats: {
       stamina: Math.round(state.stats.stamina),
       hunger: Math.round(state.stats.hunger),

@@ -120,3 +120,4 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch }) => {
     </header>
   );
 };
+

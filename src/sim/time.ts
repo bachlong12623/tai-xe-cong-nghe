@@ -75,3 +75,4 @@ export function advanceTime(current: GameTime, minutesToAdd: number): AdvanceTim
     isNewDayStartHour: passed5Am,
   };
 }
+

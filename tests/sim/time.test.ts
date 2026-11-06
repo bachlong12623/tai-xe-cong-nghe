@@ -39,3 +39,4 @@ describe('Time System - 24h cycle & tick', () => {
     expect(isNightHour(22)).toBe(false);
   });
 });
+

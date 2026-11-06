@@ -1,4 +1,5 @@
 import { RngState } from './rng';
+import type { TripOrder } from './orders';
 
 export type DayOfWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = Thứ 2, 7 = Chủ Nhật
 
@@ -98,13 +99,16 @@ export type DriverTier = 'bronze' | 'silver' | 'gold' | 'diamond';
 export interface DriverApp {
   isOnline: boolean;
   rating: number; // 1.0 - 5.0
+  ratingHistory: number[]; // 50 recent ratings
+  totalTripsCompleted: number;
   acceptanceRate: number; // 0.0 - 1.0
   cancellationRate: number; // 0.0 - 1.0
   tier: DriverTier;
   warningCount: number;
   suspendedUntilMinute: number | null;
-  currentOffer: any | null;
-  activeTrip: any | null;
+  cooldownUntilMinute: number | null;
+  currentOffer: TripOrder | null;
+  activeTrip: TripOrder | null;
 }
 
 export type WeatherType = 'sunny' | 'cloudy' | 'light_rain' | 'heavy_rain' | 'storm';
@@ -153,6 +157,8 @@ export interface GameState {
   napRemainingMinutes: number;
   currentActivityLabel: string | null;
   activeEvent: any | null;
+  showDailySummaryModal: boolean;
+  pendingSummary: DailySummary | null;
 }
 
 export type Action =
@@ -169,4 +175,7 @@ export type Action =
   | { t: 'SET_SPOT'; spotId: string | null }
   | { t: 'ACCEPT_OFFER'; id: string }
   | { t: 'REJECT_OFFER'; id: string }
+  | { t: 'TICK_OFFER_COUNTDOWN' }
+  | { t: 'CLOSE_SUMMARY_MODAL' }
   | { t: 'CHOOSE_EVENT'; eventId: string; optionIndex: number };
+

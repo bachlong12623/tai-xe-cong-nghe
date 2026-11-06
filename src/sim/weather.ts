@@ -55,3 +55,4 @@ export function updateWeather(weather: WeatherState, hour: number, rng: RngState
     isFlooded: (nextType === 'heavy_rain' || nextType === 'storm'),
   };
 }
+

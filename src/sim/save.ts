@@ -57,3 +57,4 @@ export function deleteSavedGame(): void {
     console.error('Failed to clear save', err);
   }
 }
+
