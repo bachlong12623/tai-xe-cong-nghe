@@ -22,11 +22,13 @@ export interface CharacterStats {
   alertness: number;    // 0 - 100
   morale: number;       // 0 - 100
   
-  // Hidden / extended stats (from milestone 4, tracked safely)
+  // Hidden / extended stats (Milestone 4)
   sleepDebt: number;    // hours
-  baseFatigue: number;  // 0 - 100
+  baseFatigue: number;  // 0 - 100 (accumulated fatigue)
   health: number;       // 0 - 100
   phoneBattery: number; // 0 - 100
+  isSick: boolean;
+  sickDaysRemaining: number;
   
   // Transient tracking
   coffeeCountToday: number;
@@ -40,6 +42,7 @@ export interface VehicleCondition {
   oil: number;
   brakes: number;
   chain: number;
+  sparkPlug: number;
 }
 
 export interface VehicleState {
@@ -136,6 +139,51 @@ export interface LogMessage {
   type: 'info' | 'success' | 'warning' | 'danger' | 'event';
 }
 
+export interface GameEventOptionEffects {
+  staminaDelta?: number;
+  moraleDelta?: number;
+  healthDelta?: number;
+  batteryRestore?: number;
+  ratingPenalty?: number;
+  ratingBonus?: number;
+  tireRepair?: number;
+  sparkPlugRepair?: number;
+  forceOffline?: boolean;
+}
+
+export interface GameEventOption {
+  label: string;
+  cost: number;
+  durationMinutes: number;
+  effects: GameEventOptionEffects;
+}
+
+export interface GameEvent {
+  id: string;
+  name: string;
+  description: string;
+  weight?: number;
+  options: GameEventOption[];
+  cooldownMinutes?: number;
+  conditions?: {
+    requiresFlood?: boolean;
+    requiresRain?: boolean;
+    requiresNight?: boolean;
+    minKmDriven?: number;
+  };
+}
+
+export interface AccidentEvent {
+  severity: 'light' | 'moderate' | 'severe';
+  title: string;
+  description: string;
+  repairCost: number;
+  medicalCost: number;
+  daysOff: number;
+  healthPenalty: number;
+  moralePenalty: number;
+}
+
 export interface GameState {
   schemaVersion: number;
   seed: number;
@@ -156,9 +204,11 @@ export interface GameState {
   isNapping: boolean;
   napRemainingMinutes: number;
   currentActivityLabel: string | null;
-  activeEvent: any | null;
+  activeEvent: GameEvent | null;
+  activeAccident: AccidentEvent | null;
   showDailySummaryModal: boolean;
   pendingSummary: DailySummary | null;
+  recentEventCooldowns: Record<string, number>; // eventId -> availableAtMinute
 }
 
 export type Action =
@@ -173,10 +223,15 @@ export type Action =
   | { t: 'REFUEL'; liters?: number }
   | { t: 'MOVE_TO'; targetZoneId: string; targetSpotId?: string; routeMode?: 'fast' | 'light' | 'dry' }
   | { t: 'SET_SPOT'; spotId: string | null }
+  | { t: 'SET_ROUTE_MODE'; mode: 'fast' | 'light' | 'dry' }
   | { t: 'ACCEPT_OFFER'; id: string }
   | { t: 'REJECT_OFFER'; id: string }
   | { t: 'CANCEL_ACTIVE_TRIP' }
   | { t: 'TICK_OFFER_COUNTDOWN' }
   | { t: 'CLOSE_SUMMARY_MODAL' }
+  | { t: 'CHOOSE_EVENT_OPTION'; eventId: string; optionIndex: number }
+  | { t: 'DISMISS_ACCIDENT' }
+  | { t: 'REPAIR_PART'; part: 'tires' | 'oil' | 'brakes' | 'chain' | 'sparkPlug' }
+  | { t: 'CHARGE_PHONE' }
   | { t: 'CHOOSE_EVENT'; eventId: string; optionIndex: number };
 

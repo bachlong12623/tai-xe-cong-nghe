@@ -2,54 +2,358 @@
   {
     "id": "thung_lop",
     "name": "Thủng lốp xe",
-    "description": "Bánh sau cán phải đinh nhọn trên cầu. Xe chao đảo may mà giữ được lái.",
-    "conditions": { "minKmDriven": 30 },
+    "description": "Bánh sau cán phải đinh nhọn trên cầu. Xe chao đảo may mà bạn giữ được lái an toàn vào lề đường.",
+    "weight": 1.0,
+    "cooldownMinutes": 720,
     "options": [
       {
-        "label": "Vá xe tại chỗ bên đường (50.000đ, 20 phút)",
+        "label": "Vá xe tại chỗ bên đường (Chi 50.000đ, mất 20 phút)",
         "cost": 50000,
         "durationMinutes": 20,
-        "effects": { "moraleDelta": -2 }
+        "effects": { "moraleDelta": -3, "tireRepair": 25 }
       },
       {
-        "label": "Dắt bộ 1.5km tìm tiệm quen (Miễn phí, 45 phút)",
+        "label": "Dắt bộ 1.5km tìm tiệm quen (Miễn phí, mất 45 phút, tốn sức)",
         "cost": 0,
         "durationMinutes": 45,
-        "effects": { "staminaDelta": -15, "moraleDelta": -6 }
+        "effects": { "staminaDelta": -18, "moraleDelta": -8, "tireRepair": 40 }
+      }
+    ]
+  },
+  {
+    "id": "chet_may_ngap",
+    "name": "Xe chết máy do đường ngập sâu",
+    "description": "Đoạn đường Huỳnh Tấn Phát ngập tới nửa bánh xe. Xe tải chạy ngang tạo sóng làm nước tràn vào pô, bugi ướt khiến xe tắt ngúm!",
+    "weight": 1.2,
+    "conditions": { "requiresFlood": true },
+    "cooldownMinutes": 600,
+    "options": [
+      {
+        "label": "Dắt xe vào tiệm ven đường súc rửa bugi (Chi 350.000đ, mất 45 phút)",
+        "cost": 350000,
+        "durationMinutes": 45,
+        "effects": { "moraleDelta": -12, "staminaDelta": -10, "sparkPlugRepair": 50 }
+      },
+      {
+        "label": "Tự dắt xe lên lề lau khô bugi đạp máy (Mất 60 phút, tốn nhiều sức)",
+        "cost": 0,
+        "durationMinutes": 60,
+        "effects": { "staminaDelta": -25, "moraleDelta": -15 }
       }
     ]
   },
   {
     "id": "khach_tip_lon",
     "name": "Khách tip hào phóng",
-    "description": "Vị khách khen bạn lái êm, đi đúng giờ và gửi tặng thêm tiền tip!",
+    "description": "Vị khách khen bạn lái xe rất êm, thái độ niềm nở và gửi tặng thêm một khoản tiền tip động viên!",
+    "weight": 0.8,
+    "cooldownMinutes": 360,
     "options": [
       {
-        "label": "Cảm ơn khách nồng nhiệt (+50.000đ, Tinh thần +5)",
-        "cost": -50000,
+        "label": "Cúi đầu cảm ơn khách nồng nhiệt (+60.000đ tiền tip, Tinh thần +8)",
+        "cost": -60000,
         "durationMinutes": 2,
-        "effects": { "moraleDelta": 5 }
+        "effects": { "moraleDelta": 8 }
+      }
+    ]
+  },
+  {
+    "id": "khach_chui_vo_ly",
+    "name": "Khách phàn nàn và chửi vô lý",
+    "description": "Đường kẹt xe tắc nghẽn, khách liên tục giục giã và buông lời xúc phạm bạn vì đến trễ 4 phút.",
+    "weight": 0.9,
+    "cooldownMinutes": 480,
+    "options": [
+      {
+        "label": "Nhẫn nhịn xin lỗi cho xong chuyện (Tinh thần -8, bảo vệ sao)",
+        "cost": 0,
+        "durationMinutes": 3,
+        "effects": { "moraleDelta": -8 }
+      },
+      {
+        "label": "Giải thích thẳng thắn lại (Tinh thần không bị ức chế, nhưng rủi ro khách chấm 1 sao)",
+        "cost": 0,
+        "durationMinutes": 5,
+        "effects": { "moraleDelta": 2, "ratingPenalty": 0.05 }
+      }
+    ]
+  },
+  {
+    "id": "do_bo_quen",
+    "name": "Khách bỏ quên túi xách trên xe",
+    "description": "Sau khi trả khách, bạn phát hiện một chiếc ví cùng giấy tờ tùy thân của khách rơi dưới chỗ để chân.",
+    "weight": 0.7,
+    "cooldownMinutes": 720,
+    "options": [
+      {
+        "label": "Quay đầu chạy lại gửi trả khách (Mất 25 phút, khách hậu tạ 100.000đ, Tinh thần +10)",
+        "cost": -100000,
+        "durationMinutes": 25,
+        "effects": { "moraleDelta": 10, "ratingBonus": 0.04 }
+      },
+      {
+        "label": "Gửi vào trụ sở công ty hỗ trợ sau (Tiết kiệm thời gian, tiếp tục chạy)",
+        "cost": 0,
+        "durationMinutes": 5,
+        "effects": { "moraleDelta": 0 }
+      }
+    ]
+  },
+  {
+    "id": "quan_het_mon",
+    "name": "Quán ăn hết món",
+    "description": "Đến quán cơm, chủ quán báo món khách đặt vừa hết sạch, phải chờ nấu thêm mẻ mới.",
+    "weight": 0.8,
+    "cooldownMinutes": 360,
+    "options": [
+      {
+        "label": "Chấp nhận đứng đợi quán làm thêm (Mất thêm 15 phút)",
+        "cost": 0,
+        "durationMinutes": 15,
+        "effects": { "moraleDelta": -3 }
+      },
+      {
+        "label": "Báo tổng đài hủy đơn và nhận đền bù (Nhận 25.000đ đền bù, mất 5 phút)",
+        "cost": -25000,
+        "durationMinutes": 5,
+        "effects": { "moraleDelta": 0 }
+      }
+    ]
+  },
+  {
+    "id": "app_loi_mat_song",
+    "name": "App tài xế bị mất sóng / quá tải",
+    "description": "Mạng 4G chập chờn, ứng dụng xoay vòng không thể tải bản đồ hay nhận cuốc.",
+    "weight": 0.7,
+    "cooldownMinutes": 480,
+    "options": [
+      {
+        "label": "Tấp lề khởi động lại máy và kiên nhẫn chờ (Mất 15 phút, Tinh thần -3)",
+        "cost": 0,
+        "durationMinutes": 15,
+        "effects": { "moraleDelta": -3 }
+      }
+    ]
+  },
+  {
+    "id": "tin_nhan_lua_dao",
+    "name": "Tin nhắn lừa đảo mạo danh tổng đài",
+    "description": "Điện thoại nhận tin nhắn: 'Tài khoản của bạn bị tạm ngưng. Hãy bấm vào link và chuyển 500.000đ để xác minh kích hoạt lại'.",
+    "weight": 0.5,
+    "cooldownMinutes": 1440,
+    "options": [
+      {
+        "label": "Bỏ qua và báo cáo tin nhắn rác (Không tốn tiền)",
+        "cost": 0,
+        "durationMinutes": 2,
+        "effects": { "moraleDelta": 1 }
+      },
+      {
+        "label": "Nhẹ dạ bấm vào làm theo (Bị trừ mất 500.000đ, Tinh thần -20)",
+        "cost": 500000,
+        "durationMinutes": 10,
+        "effects": { "moraleDelta": -20 }
       }
     ]
   },
   {
     "id": "ban_ru_nhau",
     "name": "Bạn đồng hương rủ nhậu",
-    "description": "Mấy anh em cùng xóm trọ chạy Grab tụ tập ăn ốc, gọi điện rủ bạn qua góp vui.",
+    "description": "Mấy anh em cùng xóm trọ chạy Grab tụ tập quán ốc vỉa hè, gọi điện rủ bạn qua làm vài ly tâm sự.",
+    "weight": 0.6,
+    "cooldownMinutes": 1440,
     "options": [
       {
-        "label": "Từ chối khéo để cày thêm cuốc",
+        "label": "Từ chối khéo để cày thêm cuốc kiếm tiền (Tinh thần -3)",
         "cost": 0,
-        "durationMinutes": 5,
+        "durationMinutes": 3,
         "effects": { "moraleDelta": -3 }
       },
       {
-        "label": "Tắt app qua chung vui (Chi 150.000đ, Tinh thần +15, nghỉ hết ngày)",
+        "label": "Tắt app qua chung vui với anh em (Chi 150.000đ, Tinh thần +18, nghỉ chạy)",
         "cost": 150000,
         "durationMinutes": 180,
-        "effects": { "moraleDelta": 15, "forceOffline": true }
+        "effects": { "moraleDelta": 18, "forceOffline": true }
+      }
+    ]
+  },
+  {
+    "id": "nguoi_nha_om",
+    "name": "Ở quê gọi vào báo mẹ bị ốm",
+    "description": "Em gái ở quê gọi điện thoại báo mẹ bị cảm sốt cần tiền mua thuốc men và đi trạm xá.",
+    "weight": 0.4,
+    "cooldownMinutes": 2880,
+    "options": [
+      {
+        "label": "Chuyển khoản ngay 300.000đ về quê (Chi 300.000đ, yên tâm cày tiếp)",
+        "cost": 300000,
+        "durationMinutes": 5,
+        "effects": { "moraleDelta": 5 }
+      },
+      {
+        "label": "Hứa cuối tuần gom đủ tiền gửi về sau (Tinh thần -8 vì lo lắng)",
+        "cost": 0,
+        "durationMinutes": 5,
+        "effects": { "moraleDelta": -8 }
+      }
+    ]
+  },
+  {
+    "id": "gia_xang_tang",
+    "name": "Giá xăng trong nước tăng giá",
+    "description": "Liên bộ Công Thương thông báo điều chỉnh giá xăng RON 95 tăng 1.500đ/lít từ 15h chiều nay.",
+    "weight": 0.5,
+    "cooldownMinutes": 2880,
+    "options": [
+      {
+        "label": "Thở dài chấp nhận chi phí vận hành tăng (Tinh thần -4)",
+        "cost": 0,
+        "durationMinutes": 1,
+        "effects": { "moraleDelta": -4 }
+      }
+    ]
+  },
+  {
+    "id": "cong_trinh_chan_duong",
+    "name": "Lô cốt công trình đào đường chặn lối",
+    "description": "Đoạn đường lớn đang thi công cống thoát nước, rào chắn kẹt cứng không thể nhích.",
+    "weight": 0.8,
+    "cooldownMinutes": 480,
+    "options": [
+      {
+        "label": "Luồn lách đi vòng hẻm nhỏ (Mất thêm 10 phút và tốn xăng)",
+        "cost": 0,
+        "durationMinutes": 10,
+        "effects": { "staminaDelta": -4 }
+      },
+      {
+        "label": "Kiên nhẫn nhích từng mét trong dòng xe kẹt (Mất 20 phút, Tinh thần -5)",
+        "cost": 0,
+        "durationMinutes": 20,
+        "effects": { "moraleDelta": -5, "staminaDelta": -6 }
+      }
+    ]
+  },
+  {
+    "id": "mua_giong_bat_chot",
+    "name": "Mưa giông tầm tã bất chợt",
+    "description": "Bầu trời tối sầm, cơn giông nhiệt mùa hạ trút nước xối xả kèm sấm chớp giật liên hồi.",
+    "weight": 1.1,
+    "conditions": { "requiresRain": true },
+    "cooldownMinutes": 360,
+    "options": [
+      {
+        "label": "Tấp lề trú mưa dưới hiên nhà (Mất 25 phút, an toàn cho sức khỏe)",
+        "cost": 0,
+        "durationMinutes": 25,
+        "effects": { "moraleDelta": 2 }
+      },
+      {
+        "label": "Mặc vội áo mưa mỏng cày cuốc tiếp (Được giá surge cao, nhưng hao sức & ướt người)",
+        "cost": 0,
+        "durationMinutes": 5,
+        "effects": { "staminaDelta": -12, "healthDelta": -4, "moraleDelta": -4 }
+      }
+    ]
+  },
+  {
+    "id": "khach_say_quay",
+    "name": "Khách say xỉn nôn thốc ra xe",
+    "description": "Cuốc xe đêm chở một vị khách từ quán bar về, khách say không kìm được đã nôn ra yên xe và ống bô!",
+    "weight": 0.7,
+    "conditions": { "requiresNight": true },
+    "cooldownMinutes": 600,
+    "options": [
+      {
+        "label": "Yêu cầu phụ thu phí rửa xe (Nhận 150.000đ bồi thường, mất 20 phút chùi rửa)",
+        "cost": -150000,
+        "durationMinutes": 20,
+        "effects": { "moraleDelta": -6 }
+      },
+      {
+        "label": "Nhịn nhục tự lấy nước dội rửa cho xong (Mất 25 phút, Tinh thần -12)",
+        "cost": 0,
+        "durationMinutes": 25,
+        "effects": { "moraleDelta": -12 }
+      }
+    ]
+  },
+  {
+    "id": "pin_dien_thoai_yeu",
+    "name": "Pin điện thoại báo động đỏ 8%",
+    "description": "Chạy bản đồ và định vị GPS liên tục khiến pin sụt nhanh, máy nóng ran sắp tắt nguồn.",
+    "weight": 0.9,
+    "cooldownMinutes": 360,
+    "options": [
+      {
+        "label": "Ghé quán nước uống ly trà đá xin cắm nhờ sạc (Chi 15.000đ, mất 25 phút, pin lên 50%)",
+        "cost": 15000,
+        "durationMinutes": 25,
+        "effects": { "batteryRestore": 45, "moraleDelta": 2 }
+      },
+      {
+        "label": "Cố gắng chạy tiếp (Rủi ro sập nguồn mất liên lạc)",
+        "cost": 0,
+        "durationMinutes": 2,
+        "effects": { "moraleDelta": -3 }
+      }
+    ]
+  },
+  {
+    "id": "tai_xe_chen_cho",
+    "name": "Tài xế khác chen lấn chỗ chờ",
+    "description": "Tại cổng chung cư đông đúc, một tài xế xe ôm công nghệ khác chạy tới đậu chắn ngang đầu xe bạn để giành đơn.",
+    "weight": 0.7,
+    "cooldownMinutes": 480,
+    "options": [
+      {
+        "label": "Lùi lại một chút dĩ hòa vi quý (Mất vị trí đắc địa, Tinh thần -3)",
+        "cost": 0,
+        "durationMinutes": 3,
+        "effects": { "moraleDelta": -3 }
+      },
+      {
+        "label": "Nhắc nhở quyết liệt giữ vị trí (Giữ được chỗ, nhưng căng thẳng Tinh thần -6)",
+        "cost": 0,
+        "durationMinutes": 5,
+        "effects": { "moraleDelta": -6 }
+      }
+    ]
+  },
+  {
+    "id": "do_an_bi_do",
+    "name": "Đơn hàng đồ ăn bị nghiêng đổ nước lẩu",
+    "description": "Do đường mấp mô ổ gà, túi đồ ăn bị nghiêng khiến nước súp rỉ ra ngoài túi nilông.",
+    "weight": 0.7,
+    "cooldownMinutes": 600,
+    "options": [
+      {
+        "label": "Tự bỏ tiền túi bồi thường khách (Chi 80.000đ, giữ được uy tín 5 sao)",
+        "cost": 80000,
+        "durationMinutes": 10,
+        "effects": { "moraleDelta": -8 }
+      },
+      {
+        "label": "Giải trình xin khách thông cảm (Rủi ro khách khiếu nại trừ điểm sao)",
+        "cost": 0,
+        "durationMinutes": 10,
+        "effects": { "moraleDelta": -4, "ratingPenalty": 0.08 }
+      }
+    ]
+  },
+  {
+    "id": "tai_xe_chia_se_tin",
+    "name": "Bác tài già chia sẻ kinh nghiệm",
+    "description": "Ngồi chờ ở quán nước, một bác tài xế chạy lâu năm chỉ cho bạn mẹo né đoạn ngập đường Nguyễn Hữu Cảnh và quán ăn làm đồ nhanh.",
+    "weight": 0.6,
+    "cooldownMinutes": 720,
+    "options": [
+      {
+        "label": "Mời bác ly trà đá và lắng nghe kinh nghiệm (Chi 5.000đ, Tinh thần +8, học thêm mẹo đường)",
+        "cost": 5000,
+        "durationMinutes": 10,
+        "effects": { "moraleDelta": 8 }
       }
     ]
   }
 ]
-

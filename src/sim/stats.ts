@@ -7,6 +7,7 @@ export interface StatDecayContext {
   isResting: boolean;
   isSleeping: boolean;
   weather: WeatherState;
+  isOnline?: boolean;
 }
 
 export function createInitialStats(): CharacterStats {
@@ -19,6 +20,8 @@ export function createInitialStats(): CharacterStats {
     baseFatigue: 0,
     health: 100,
     phoneBattery: 100,
+    isSick: false,
+    sickDaysRemaining: 0,
     coffeeCountToday: 0,
     coffeeCrashes: [],
     lastNapMinute: null,
@@ -40,12 +43,13 @@ export function updateStatsPerMinute(
 ): { stats: CharacterStats; events: string[] } {
   const newStats: CharacterStats = { ...stats };
   const events: string[] = [];
-
   const hourFraction = 1 / 60;
 
   // 1. STAMINA
   if (ctx.isSleeping) {
-    newStats.stamina += balanceData.stats.stamina.recoverSleepingPerHour * hourFraction;
+    // Base fatigue reduces recovery efficiency from sleeping
+    const fatigueFactor = Math.max(0.5, 1.0 - 0.005 * newStats.baseFatigue);
+    newStats.stamina += balanceData.stats.stamina.recoverSleepingPerHour * fatigueFactor * hourFraction;
   } else {
     let decayRate = balanceData.stats.stamina.decayRestingPerHour;
     if (ctx.isDriving) {
@@ -61,6 +65,11 @@ export function updateStatsPerMinute(
       decayRate += balanceData.stats.stamina.decayRainExtraPerHour;
     }
 
+    // Sickness penalty: stamina decays 30% faster
+    if (newStats.isSick) {
+      decayRate *= 1.3;
+    }
+
     newStats.stamina -= decayRate * hourFraction;
   }
 
@@ -68,7 +77,6 @@ export function updateStatsPerMinute(
   if (!ctx.isSleeping) {
     newStats.hunger -= balanceData.stats.hunger.decayPerHour * hourFraction;
   } else {
-    // Sleeping consumes less hunger
     newStats.hunger -= (balanceData.stats.hunger.decayPerHour * 0.4) * hourFraction;
   }
 
@@ -81,13 +89,13 @@ export function updateStatsPerMinute(
       ? balanceData.stats.alertness.decayNightPerHour
       : balanceData.stats.alertness.decayDayPerHour;
     
-    // Sleep debt multiplier
+    // Sleep debt penalty multiplier
     const sleepDebtMult = 1 + 0.15 * newStats.sleepDebt;
     newStats.alertness -= baseDecay * sleepDebtMult * hourFraction;
   }
 
   // Process coffee crashes
-  const remainingCrashes = [];
+  const remainingCrashes: CoffeeCrashTimer[] = [];
   for (const crash of newStats.coffeeCrashes) {
     if (time.totalMinutes >= crash.triggerAtMinute) {
       newStats.alertness -= crash.penalty;
@@ -100,8 +108,34 @@ export function updateStatsPerMinute(
 
   // 4. MORALE
   if (newStats.hunger < balanceData.stats.hunger.criticalThreshold) {
-    // Hungry penalty: -2/hour
     newStats.morale -= balanceData.stats.hunger.moralePenaltyPerHourWhenHungry * hourFraction;
+  }
+
+  // 5. PHONE BATTERY
+  if (ctx.isOnline) {
+    // 8% per hour when online GPS / maps
+    newStats.phoneBattery = Math.max(0, newStats.phoneBattery - 8 * hourFraction);
+  } else {
+    // 1% per hour in standby
+    newStats.phoneBattery = Math.max(0, newStats.phoneBattery - 1 * hourFraction);
+  }
+
+  // 6. HEALTH DEGRADATION
+  // Drenching in heavy rain while driving: -3 health/hour
+  if (ctx.isDriving && (ctx.weather.type === 'heavy_rain' || ctx.weather.type === 'storm')) {
+    newStats.health = Math.max(0, newStats.health - 3 * hourFraction);
+  }
+
+  // Starving severely (hunger < 10): -2 health/hour
+  if (newStats.hunger < 10) {
+    newStats.health = Math.max(0, newStats.health - 2 * hourFraction);
+  }
+
+  // Trigger Sickness if health drops below 40
+  if (newStats.health < 40 && !newStats.isSick) {
+    newStats.isSick = true;
+    newStats.sickDaysRemaining = 2;
+    events.push('🚨 Bạn đã bị ốm sốt nặng do làm việc quá sức và dầm mưa gió (Sức khỏe < 40%)! Cần nghỉ ngơi mua thuốc uống.');
   }
 
   // Clamping
@@ -109,13 +143,12 @@ export function updateStatsPerMinute(
   newStats.hunger = clamp(newStats.hunger, 0, 100);
   newStats.alertness = clamp(newStats.alertness, 0, 100);
   newStats.morale = clamp(newStats.morale, 0, 100);
+  newStats.health = clamp(newStats.health, 0, 100);
+  newStats.baseFatigue = clamp(newStats.baseFatigue, 0, 100);
 
   return { stats: newStats, events };
 }
 
-/**
- * Handle consuming food item.
- */
 export function applyEatFood(
   stats: CharacterStats,
   hungerRestore: number,
@@ -128,9 +161,6 @@ export function applyEatFood(
   };
 }
 
-/**
- * Handle drinking coffee or energy drink.
- */
 export function applyDrinkCoffee(
   stats: CharacterStats,
   currentMinute: number,
@@ -138,11 +168,12 @@ export function applyDrinkCoffee(
   moraleBoost = 2
 ): { stats: CharacterStats; message: string } {
   const count = stats.coffeeCountToday + 1;
-  // Tolerance from 3rd cup: -10% per additional cup
   const penaltyFactor = count >= 3 ? Math.max(0.4, 1.0 - (count - 2) * 0.1) : 1.0;
   const actualBoost = baseAlertnessBoost * penaltyFactor;
 
-  // Crash scheduled 3 hours later (180 minutes)
+  // Excessive caffeine takes a toll on long term health from 3rd cup
+  const healthPenalty = count >= 3 ? 2 : 0;
+
   const crashTimer: CoffeeCrashTimer = {
     triggerAtMinute: currentMinute + 180,
     penalty: 15,
@@ -152,21 +183,18 @@ export function applyDrinkCoffee(
     ...stats,
     alertness: clamp(stats.alertness + actualBoost, 0, 100),
     morale: clamp(stats.morale + moraleBoost, 0, 100),
+    health: clamp(stats.health - healthPenalty, 0, 100),
     coffeeCountToday: count,
     coffeeCrashes: [...stats.coffeeCrashes, crashTimer],
   };
 
   const message = count >= 3
-    ? `Uống cữ thứ ${count} trong ngày. Do đã nhờn thuốc nên chỉ hồi được +${actualBoost.toFixed(1)} Tỉnh táo. Sau 3 giờ sẽ bị sụt pin!`
+    ? `Uống cữ thứ ${count} trong ngày. Do đã nhờn thuốc nên chỉ hồi được +${actualBoost.toFixed(1)} Tỉnh táo và hại sức khỏe (-2 Sức khỏe). Sau 3 giờ sẽ bị sụt pin!`
     : `Uống ly cà phê đá đậm đà! Đầu óc bừng tỉnh (+${actualBoost.toFixed(1)} Tỉnh táo). Cẩn thận sau 3 giờ sẽ thấm mệt.`;
 
   return { stats: newStats, message };
 }
 
-/**
- * Handle 20-minute power nap.
- * Effective once every 4 hours (240 minutes).
- */
 export function applyPowerNap(
   stats: CharacterStats,
   currentMinute: number
@@ -194,13 +222,16 @@ export function applyPowerNap(
   };
 }
 
-/**
- * Evaluate sleep debt and reset daily sleep counters when day rolls over (05:00).
- */
-export function processDailySleepDebt(stats: CharacterStats): { stats: CharacterStats; message: string } {
+export function processDailySleepDebt(
+  stats: CharacterStats,
+  hoursOnlineYesterday = 8
+): { stats: CharacterStats; message: string } {
   const hoursSlept = stats.dailyHoursSlept;
   let newSleepDebt = stats.sleepDebt;
+  let newFatigue = stats.baseFatigue;
+  let newHealth = stats.health;
 
+  // 1. Sleep Debt evaluation
   if (hoursSlept < 7) {
     const deficit = 7 - hoursSlept;
     newSleepDebt += deficit;
@@ -209,14 +240,43 @@ export function processDailySleepDebt(stats: CharacterStats): { stats: Character
     newSleepDebt = Math.max(0, newSleepDebt - excess * 0.5);
   }
 
+  // 2. Base fatigue accumulation: working > 10 hours
+  if (hoursOnlineYesterday >= 12) {
+    newFatigue = Math.min(100, newFatigue + 10);
+  } else if (hoursOnlineYesterday >= 10) {
+    newFatigue = Math.min(100, newFatigue + 5);
+  } else if (hoursOnlineYesterday <= 4) {
+    newFatigue = Math.max(0, newFatigue - 10); // Rest day relieves fatigue
+  }
+
+  // 3. Chronic sleep debt damages health
+  if (newSleepDebt >= 10) {
+    newHealth = Math.max(0, newHealth - 3);
+  }
+
+  // 4. Sickness resolution
+  let isSick = stats.isSick;
+  let sickDays = stats.sickDaysRemaining;
+  if (isSick) {
+    sickDays -= 1;
+    if (sickDays <= 0) {
+      isSick = false;
+      newHealth = Math.min(100, newHealth + 25);
+    }
+  }
+
   const message = hoursSlept >= 7
-    ? `Tổng kết giấc ngủ: Đã ngủ ${hoursSlept.toFixed(1)}h (Đạt chuẩn 7h). Nợ ngủ hiện tại: ${newSleepDebt.toFixed(1)}h.`
-    : `Cảnh báo thiếu ngủ: Hôm qua chỉ ngủ ${hoursSlept.toFixed(1)}h (Thiếu ${(7 - hoursSlept).toFixed(1)}h). Nợ ngủ tích lũy: ${newSleepDebt.toFixed(1)}h!`;
+    ? `Tổng kết giấc ngủ: Đã ngủ ${hoursSlept.toFixed(1)}h (Đạt chuẩn 7h). Nợ ngủ: ${newSleepDebt.toFixed(1)}h. Mệt nền: ${newFatigue}%.`
+    : `Cảnh báo thiếu ngủ: Hôm qua chỉ ngủ ${hoursSlept.toFixed(1)}h (Thiếu ${(7 - hoursSlept).toFixed(1)}h). Nợ ngủ: ${newSleepDebt.toFixed(1)}h. Mệt nền: ${newFatigue}%!`;
 
   return {
     stats: {
       ...stats,
       sleepDebt: newSleepDebt,
+      baseFatigue: newFatigue,
+      health: newHealth,
+      isSick,
+      sickDaysRemaining: sickDays,
       dailyHoursSlept: 0,
       coffeeCountToday: 0,
     },

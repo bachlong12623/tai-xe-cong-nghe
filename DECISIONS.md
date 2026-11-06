@@ -58,20 +58,27 @@ Tài liệu này lưu lại các quyết định kỹ thuật, giả định và
 ## 006. Nghiệm thu Mốc 3 (MVP Chơi Được & Bot Mô Phỏng 7 Ngày)
 - **Ngày**: 06/11/2026
 - **Nội dung hoàn thành**:
-  - **Công thức điểm ưu tiên phát cuốc ẩn (Hidden Dispatch Score)**:
-    - $score = 0.35 \cdot rating\_norm + 0.25 \cdot acceptRate + 0.20 \cdot (1 - cancelRate) + 0.20 \cdot proximity\_norm + \varepsilon$ với nhiễu Gaussian $\varepsilon \sim \mathcal{N}(0, 0.2)$ mô phỏng thuật toán thực tế của app công nghệ (không minh bạch tuyệt đối).
-  - **Hệ thống phân hạng tài xế (Driver Tiers) & Kỷ luật**:
-    - Tự động thăng hạng theo tích lũy số cuốc và sao: Đồng (0-49), Bạc (>=50 & 4.8★), Vàng (>=150 & 4.85★), Kim Cương (>=300 & 4.90★).
-    - Cảnh cáo và tạm khóa tài khoản 24h nếu rating < 4.6 hoặc tỷ lệ hủy chuyến > 15%.
-    - Hỗ trợ tài xế chủ động hủy cuốc trước khi đón (`CANCEL_ACTIVE_TRIP`).
-  - **Hệ thống Bot mô phỏng đa chiến lược (Headless Multi-Day Simulation)**:
-    - Xây dựng 4 bot đại diện cho 4 phong cách tài xế:
-      1. *BalancedBot* (Cân bằng): Ăn/ngủ đủ 7h, chạy giờ hành chính $\rightarrow$ sống sót trọn vẹn 7 ngày, nợ ngủ thấp (<5h), lợi nhuận dương ổn định.
-      2. *WorkaholicBot* (Ham chạy): Cày cuốc thâu đêm, uống cà phê liên tục, ngủ ít $\rightarrow$ nợ ngủ tăng vọt (>15h), sụp đổ thể lực.
-      3. *LazyBot* (Lười): Chỉ chạy 5h ban ngày, ngủ 10h $\rightarrow$ an toàn nhưng số cuốc và thu nhập thấp hơn hẳn.
-      4. *PeakHunterBot* (Săn giờ cao điểm): Chỉ bật app lúc 07:00-09:00 và 17:00-19:30 $\rightarrow$ tối ưu thời gian/thu nhập.
-    - Xuất dữ liệu mô phỏng ra định dạng CSV chuẩn theo mục 19.
-  - **Giao diện & Lưu trữ (Save / Load / Reset)**:
-    - Bổ sung nút Lưu game, Chơi lại từ đầu trên TopBar.
-    - Bản đồ Graph 2D SVG hiển thị đường di chuyển màu neon rực rỡ khi đang thực hiện cuốc.
-  - **Kiểm thử**: Toàn bộ 28/28 unit tests pass 100%, build production thành công.
+  - **Công thức điểm ưu tiên phát cuốc ẩn (Hidden Dispatch Score)** với nhiễu Gaussian $\varepsilon \sim \mathcal{N}(0, 0.2)$.
+  - **Hệ thống phân hạng tài xế (Đồng/Bạc/Vàng/Kim Cương)** & kỷ luật tạm khóa tài khoản.
+  - **Hệ thống Bot mô phỏng Headless 7 ngày**: BalancedBot, WorkaholicBot, LazyBot, PeakHunterBot với tính năng xuất CSV.
+  - **Lưu/Tải/Reset**: Quản lý localStorage an toàn, bản đồ đường đi nối 2 khu vực phát sáng khi nhận cuốc.
+
+## 007. Nghiệm thu Mốc 4 (Chiều Sâu: Chỉ Số Ẩn, Hao Mòn, Sự Kiện & Tai Nạn)
+- **Ngày**: 06/11/2026
+- **Nội dung hoàn thành**:
+  - **Chỉ số ẩn & Sức khỏe dài hạn**:
+    - `baseFatigue` (Mệt nền 0–100): Tích lũy khi chạy $>10$h/ngày, làm giảm hiệu suất hồi phục thể lực khi ngủ.
+    - `health` (Sức khỏe 0–100): Suy giảm khi dầm mưa nặng hạt không áo mưa xịn (-3/h), nhịn đói hoặc nợ ngủ kinh niên ($>10$h).
+    - `isSick` (Ốm sốt): Kích hoạt khi `health < 40`, bắt buộc nghỉ dưỡng và tốn tiền thuốc men.
+    - `phoneBattery` (Pin điện thoại): Tiêu hao 8%/h khi bật app định vị; nếu sập nguồn về 0% app tự ngắt; hỗ trợ ghé quán nước sạc pin (`CHARGE_PHONE`).
+  - **Hao mòn 5 bộ phận xe & Bảo dưỡng**:
+    - Lốp (~8.000km), Nhớt (~1.500km), Bố thắng (~10.000km), Nhông sên dĩa (~15.000km), Bugi (~8.000km).
+    - Giao diện Tiệm sửa xe & bảo dưỡng (`MaintenanceModal`) cho phép thay thế phục hồi 100%.
+  - **Công thức xác suất Tai nạn giao thông (Mục 10)**:
+    - $P = 0.0015 \times speedMode \times rain \times night \times (1 + \max(0, \frac{30 - alert}{30})) \times (1 + \max(0, \frac{50 - \min(tires, brakes)}{50}))$.
+    - Phân cấp 3 mức độ: Nhẹ (trầy xe 250k–600k), Vừa (chấn thương phần mềm 1.5tr–3tr, nghỉ 1 ngày), Nặng (nhập viện cấp cứu 5tr–15tr, nghỉ 4 ngày).
+  - **18 Sự kiện ngẫu nhiên trên đường phố**:
+    - Xây dựng 18 kịch bản tương tác (thủng lốp, chết máy ngập nước, khách tip lớn, khách chửi, khách bỏ quên túi xách, tin nhắn lừa đảo, bạn rủ nhậu, pin yếu...) kèm các lựa chọn đánh đổi rủi ro / chi phí / đạo đức.
+  - **Chế độ dẫn đường**:
+    - Lựa chọn 3 tuyến đường: `fast` (Nhanh nhất), `light` (Né kẹt xe +15% km), `dry` (Né ngập triều cường +25% km).
+  - **Kiểm thử**: Toàn bộ 36/36 unit tests pass 100%, build production thành công.

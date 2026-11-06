@@ -34,29 +34,50 @@ export const CityMap: React.FC<CityMapProps> = ({ state, view, dispatch }) => {
         </div>
 
         {/* Spot selection dropdown */}
-        <div className="flex items-center gap-1.5 text-xs">
-          <label className="text-neutral-400 text-[11px]">Chọn điểm chờ:</label>
-          <select
-            value={currentSpotId || ''}
-            onChange={(e) => dispatch({ t: 'SET_SPOT', spotId: e.target.value || null })}
-            className="bg-neutral-950 border border-neutral-700 rounded-lg px-2.5 py-1 text-xs text-neutral-200 focus:outline-none focus:border-emerald-500"
-          >
-            <option value="">-- Lang thang tìm khách --</option>
-            <optgroup label={`Tại ${view.location.zoneName}`}>
-              {spotsInCurrentZone.map((sp) => (
-                <option key={sp.id} value={sp.id}>
-                  {sp.name}
-                </option>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex items-center gap-1.5">
+            <label className="text-neutral-400 text-[11px]">Tuyến:</label>
+            <div className="flex bg-neutral-950 border border-neutral-800 rounded-lg p-0.5">
+              {(['fast', 'light', 'dry'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => dispatch({ t: 'SET_ROUTE_MODE', mode: m })}
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${
+                    view.location.routeMode === m
+                      ? 'bg-emerald-500 text-black'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  {m === 'fast' ? 'Nhanh' : m === 'light' ? 'Né kẹt' : 'Né ngập'}
+                </button>
               ))}
-            </optgroup>
-            <optgroup label="Các khu vực khác">
-              {otherSpots.map((sp) => (
-                <option key={sp.id} value={sp.id}>
-                  {sp.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <label className="text-neutral-400 text-[11px]">Điểm chờ:</label>
+            <select
+              value={currentSpotId || ''}
+              onChange={(e) => dispatch({ t: 'SET_SPOT', spotId: e.target.value || null })}
+              className="bg-neutral-950 border border-neutral-700 rounded-lg px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">-- Lang thang tìm khách --</option>
+              <optgroup label={`Tại ${view.location.zoneName}`}>
+                {spotsInCurrentZone.map((sp) => (
+                  <option key={sp.id} value={sp.id}>
+                    {sp.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Các khu vực khác">
+                {otherSpots.map((sp) => (
+                  <option key={sp.id} value={sp.id}>
+                    {sp.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
         </div>
       </div>
 

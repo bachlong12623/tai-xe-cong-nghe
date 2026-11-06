@@ -7,6 +7,8 @@ import { DriverAppScreen } from './components/DriverAppScreen';
 import { EventLogPanel } from './components/EventLogPanel';
 import { EatModal, DrinkModal, SleepModal } from './components/ActionModals';
 import { DailySummaryModal } from './components/DailySummaryModal';
+import { EventModal } from './components/EventModal';
+import { MaintenanceModal } from './components/MaintenanceModal';
 import { User, Map, Smartphone, Terminal } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -16,6 +18,7 @@ export const App: React.FC = () => {
   const [isEatModalOpen, setIsEatModalOpen] = useState(false);
   const [isDrinkModalOpen, setIsDrinkModalOpen] = useState(false);
   const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
+  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
 
   // Mobile active tab
   const [mobileTab, setMobileTab] = useState<'char' | 'map' | 'app' | 'logs'>('char');
@@ -82,6 +85,7 @@ export const App: React.FC = () => {
               onOpenEatModal={() => setIsEatModalOpen(true)}
               onOpenDrinkModal={() => setIsDrinkModalOpen(true)}
               onOpenSleepModal={() => setIsSleepModalOpen(true)}
+              onOpenMaintenanceModal={() => setIsMaintenanceModalOpen(true)}
             />
           </div>
 
@@ -125,6 +129,22 @@ export const App: React.FC = () => {
         onClose={() => setIsSleepModalOpen(false)}
         dispatch={dispatch}
       />
+      {/* Maintenance Modal */}
+      <MaintenanceModal
+        isOpen={isMaintenanceModalOpen}
+        vehicle={state.vehicle}
+        cash={state.economy.cash}
+        onClose={() => setIsMaintenanceModalOpen(false)}
+        dispatch={dispatch}
+      />
+
+      {/* Street Events & Accidents Modal */}
+      <EventModal
+        activeEvent={view.activeEvent}
+        activeAccident={view.activeAccident}
+        dispatch={dispatch}
+      />
+
       {/* Daily Summary Modal */}
       <DailySummaryModal
         isOpen={view.showDailySummaryModal}

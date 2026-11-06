@@ -44,6 +44,25 @@ function botDecideMinute(state: GameState, strategy: BotStrategy): GameState {
     s = dispatch(s, { t: 'CLOSE_SUMMARY_MODAL' });
   }
 
+  // Handle active accident
+  if (s.activeAccident) {
+    s = dispatch(s, { t: 'DISMISS_ACCIDENT' });
+    return s;
+  }
+
+  // Handle active random street event
+  if (s.activeEvent) {
+    // Pick the most economical/safe option (usually option 0)
+    s = dispatch(s, { t: 'CHOOSE_EVENT_OPTION', eventId: s.activeEvent.id, optionIndex: 0 });
+    return s;
+  }
+
+  // Recharge phone if battery is low (< 20%) and not on trip/sleeping
+  if (!s.isSleeping && !s.app.activeTrip && s.stats.phoneBattery < 25 && s.economy.cash >= 15000) {
+    s = dispatch(s, { t: 'CHARGE_PHONE' });
+    return s;
+  }
+
   // 2. Refuel if gas is low (< 1.2L) and not sleeping/on trip
   if (!s.isSleeping && !s.app.activeTrip && s.vehicle.fuelCurrent < 1.2 && s.economy.cash >= 25000) {
     s = dispatch(s, { t: 'REFUEL' });
