@@ -166,26 +166,34 @@ function botDecideMinute(state: GameState, strategy: BotStrategy): GameState {
     }
 
     case 'workaholic': {
-      // Stays online around the clock, only sleeps 2.5 hours when literally collapsing
-      if ((s.stats.alertness < 20 || s.stats.stamina < 15) && hour >= 1 && hour <= 4 && !s.isSleeping) {
-        s = dispatch(s, { t: 'SLEEP', hours: 2.5 });
+      // Runs hard ~18-19h/day, sleeps 4 hours from 01:00 to 05:00
+      if (hour >= 1 && hour < 5 && !s.isSleeping) {
+        s = dispatch(s, { t: 'SLEEP', hours: 4 });
         return s;
       }
 
+      // Midday quick nap on park bench when exhausted to keep going
+      if (hour >= 12 && hour <= 14 && (s.stats.stamina < 20 || s.stats.alertness < 25)) {
+        if (s.stats.lastNapMinute === null || s.time.totalMinutes - s.stats.lastNapMinute >= 240) {
+          s = dispatch(s, { t: 'NAP' });
+          return s;
+        }
+      }
+
       // Eats cheapest food only when starving
-      if (s.stats.hunger < 25 && s.economy.cash >= 20000) {
+      if (s.stats.hunger < 35 && s.economy.cash >= 20000) {
         s = dispatch(s, { t: 'EAT', itemId: 'banh_mi' });
         return s;
       }
 
-      // Chugs coffee continuously
+      // Chugs coffee continuously whenever alertness < 50
       if (s.stats.alertness < 50 && s.economy.cash >= 15000) {
         s = dispatch(s, { t: 'DRINK', itemId: 'ca_phe_den' });
         return s;
       }
 
-      // Tries to remain online 24/7
-      if (!s.app.isOnline && !s.isSleeping) {
+      // Online from 05:00 to 01:00
+      if (!s.app.isOnline && !s.isSleeping && (hour >= 5 || hour < 1)) {
         s = dispatch(s, { t: 'GO_ONLINE' });
       }
       break;
@@ -283,10 +291,15 @@ export function runBotSimulation(
     state = botDecideMinute(state, strategy);
     state = step(state, 1);
 
-    // Check collapse conditions (health/stamina depletion, severe crash)
-    if (state.stats.sleepDebt >= 24) {
+    // Check collapse conditions (health/stamina depletion, severe crash, excessive sleep debt)
+    if (state.activeAccident && state.activeAccident.severity === 'severe') {
       collapsed = true;
-      collapseReason = 'Kiệt sức hoàn toàn do nợ ngủ vượt quá 24 giờ tích lũy!';
+      collapseReason = 'Tai nạn giao thông nghiêm trọng do ngủ gật khi lái xe!';
+      break;
+    }
+    if (state.stats.sleepDebt >= 18) {
+      collapsed = true;
+      collapseReason = 'Kiệt sức hoàn toàn do nợ ngủ vượt quá 18 giờ tích lũy!';
       break;
     }
     if (state.stats.stamina <= 0 && state.stats.alertness <= 0) {
@@ -294,23 +307,26 @@ export function runBotSimulation(
       collapseReason = 'Sụp đổ thể lực và bất tỉnh vì cày cuốc quá sức!';
       break;
     }
+    if (state.stats.health <= 0) {
+      collapsed = true;
+      collapseReason = 'Sức khỏe kiệt quệ hoàn toàn do kiệt sức và nhịn đói!';
+      break;
+    }
 
-    // Day rollover record
-    if (state.time.day > lastRecordedDay) {
-      const summary = state.economy.lastDaySummary;
-      if (summary) {
-        summaries.push(summary);
-      }
+    // Record daily summary on 05:00 day cycle transition
+    if (state.showDailySummaryModal && state.pendingSummary) {
+      const summary = state.pendingSummary;
+      summaries.push(summary);
 
       dailyReports.push({
-        day: lastRecordedDay,
+        day: summary.day,
         strategy,
-        grossRevenue: summary?.grossRevenue || 0,
-        netProfit: summary?.netProfit || 0,
-        hoursOnline: summary?.hoursOnline || 0,
-        hoursSlept: summary?.hoursSlept || 0,
+        grossRevenue: summary.grossRevenue,
+        netProfit: summary.netProfit,
+        hoursOnline: summary.hoursOnline,
+        hoursSlept: summary.hoursSlept,
         sleepDebt: state.stats.sleepDebt,
-        tripsCount: summary?.tripsCount || 0,
+        tripsCount: summary.tripsCount,
         staminaEnd: Math.round(state.stats.stamina),
         hungerEnd: Math.round(state.stats.hunger),
         alertnessEnd: Math.round(state.stats.alertness),
@@ -320,7 +336,8 @@ export function runBotSimulation(
         collapsed: false,
       });
 
-      lastRecordedDay = state.time.day;
+      lastRecordedDay = summary.day + 1;
+      state = dispatch(state, { t: 'CLOSE_SUMMARY_MODAL' });
     }
   }
 

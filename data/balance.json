@@ -54,6 +54,10 @@
     "cash": 300000,
     "appWallet": 150000
   },
+  "livingCosts": {
+    "dailyRent": 50000,
+    "description": "Tiền thuê trọ bình dân tại TP.HCM (1.500.000đ/tháng, trừ vào 05:00 sáng mỗi ngày)"
+  },
   "difficulties": {
     "easy": {
       "name": "Dễ thở",

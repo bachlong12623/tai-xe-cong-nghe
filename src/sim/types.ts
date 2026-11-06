@@ -63,6 +63,7 @@ export interface DailyExpenses {
   fuel: number;
   maintenance: number;
   fines: number;
+  rent: number;
   other: number;
 }
 
@@ -74,6 +75,7 @@ export interface DailySummary {
   foodCost: number;
   finesAndRepairs: number;
   vehicleWearEstimate: number;
+  rentCost: number;
   netProfit: number;
   hourlyNetProfit: number;
   tripsCount: number;

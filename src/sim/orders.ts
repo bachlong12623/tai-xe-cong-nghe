@@ -340,7 +340,7 @@ export function generateOrderOffer(
     if (isPeak) merchantPrepMinutes += nextInt(rng, 2, 5);
   }
 
-  const id = `order_${Date.now()}_${nextInt(rng, 100, 999)}`;
+  const id = `order_${time.totalMinutes}_${nextInt(rng, 1000, 9999)}`;
   const title = type === 'food'
     ? `Giao đồ ăn: ${foodItems}`
     : vehicleCategory === 'car'

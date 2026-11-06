@@ -23,7 +23,7 @@ Mở trình duyệt tại: `http://localhost:3000`
 ```bash
 npm test
 ```
-*Hiện tại: 56/56 test cases qua 11 test suites pass 100%.*
+*Hiện tại: 76/76 test cases qua 18 test suites pass 100%.*
 
 ### Build kiểm tra và đóng gói Production
 ```bash
@@ -35,14 +35,16 @@ npm run build
 ## 🏗️ Kiến trúc & Cấu trúc thư mục
 
 Dự án tuân thủ nghiêm ngặt nguyên tắc **Headless Simulation**:
-1. **Simulation Core (`/src/sim/`)**: Viết bằng TypeScript thuần, 100% deterministic (sử dụng Mulberry32 PRNG có seed), không import bất kỳ thư viện UI, DOM hay React nào. Toàn bộ GameState có thể serialize/deserialize JSON an toàn.
+1. **Simulation Core (`/src/sim/`)**: Viết bằng TypeScript thuần, 100% deterministic (sử dụng Mulberry32 PRNG có seed, không dùng `Date.now()` hay `Math.random()`), không import bất kỳ thư viện UI, DOM hay React nào. Toàn bộ GameState có thể serialize/deserialize JSON an toàn.
 2. **Configuration & Balance (`/data/*.json`)**: Toàn bộ tham số cân bằng, giá cước, xe cộ, chỉ số, thời tiết, sự kiện đều được lưu trữ trong thư mục `data/` mà không bị hardcode trong logic.
 3. **User Interface (`/src/ui/`)**: React 19 + Tailwind CSS v4, thiết kế responsive tối ưu cho cả Desktop (3 cột chuyên nghiệp) và Mobile (hệ thống Tab chuyển đổi linh hoạt).
 4. **Synthesizer Sound (`/src/ui/utils/sound.ts`)**: Tổng hợp âm thanh thuần mã bằng Web Audio API không phụ thuộc file media ngoài.
 
 ```
+├── .github/workflows/         # CI Workflow tự động chạy test & build trên GitHub Actions
+│   └── ci.yml
 ├── data/                      # Cấu hình cân bằng, dữ liệu kinh tế, địa điểm, sự kiện
-│   ├── balance.json           # Tốc độ suy hao & hồi phục chỉ số, chu kỳ thời gian & Tết
+│   ├── balance.json           # Tốc độ suy hao & hồi phục chỉ số, chu kỳ thời gian & tiền trọ
 │   ├── items.json             # Thức ăn, nước uống, cà phê, trạm sạc điện
 │   ├── vehicles.json          # Danh sách xe (Wave Alpha, VinFast Evo 200, Toyota Vios)
 │   ├── zones.json             # 12 khu vực TP.HCM & tọa độ bản đồ Graph SVG
@@ -55,25 +57,27 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **Headless Simulation**:
 │   ├── goals.json             # 4 mục tiêu cuộc đời & chính sách vay nợ trả góp
 │   ├── achievements.json      # 12 danh hiệu thành tựu đáng nhớ
 │   └── events.json            # 18 sự kiện đường phố ngẫu nhiên có tương tác lựa chọn
+├── docs/
+│   └── SPEC.md                # Bản sao đặc tả kiến trúc chuẩn (docs/SPEC.md)
 ├── src/
-│   ├── sim/                   # Lõi mô phỏng headless (Deterministic Pure TypeScript)
+│   ├── sim/                   # Lõi mô phỏng headless (100% Deterministic Pure TypeScript)
 │   │   ├── rng.ts             # Mulberry32 PRNG có seed & hàm phân phối chuẩn Gaussian
 │   │   ├── time.ts            # Hệ thống thời gian 24h, tick 1 phút, ngày & lịch tuần
 │   │   ├── stats.ts           # 4 chỉ số cơ bản + chỉ số ẩn, nợ ngủ, mệt nền, đổ bệnh
 │   │   ├── orders.ts          # Điểm ưu tiên phát cuốc ẩn, định giá & vòng đời cuốc xe
 │   │   ├── traffic.ts         # Tính toán thời gian di chuyển, kẹt xe, triều cường & ngập
 │   │   ├── vehicle.ts         # Tiêu hao xăng/pin, hao mòn 5 bộ phận & tiệm sửa xe
-│   │   ├── economy.ts         # Doanh thu hiển thị vs Lợi nhuận thực, tổng kết ngày
+│   │   ├── economy.ts         # Doanh thu hiển thị vs Lợi nhuận thực, khấu hao, tiền trọ
 │   │   ├── demand.ts          # Nhu cầu cuốc xe theo giờ & thời tiết
 │   │   ├── platform.ts        # App tài xế, phân hạng Đồng/Bạc/Vàng/Kim Cương, kỷ luật
 │   │   ├── skills.ts          # Quản lý 5 kỹ năng, tích lũy EXP & hệ số tác động
 │   │   ├── violations.ts      # Phong cách lái xe, tuần tra CSGT & xử phạt vi phạm
 │   │   ├── npc.ts             # Mạng xã hội đàm thoại NPC, cập nhật điểm nóng & bẫy phạt
-│   │   ├── goals.ts           # Trả góp nợ mua xe 50k/ngày, vay nóng & mục tiêu cuộc đời
+│   │   ├── goals.ts           # Trả góp nợ mua xe 50k/ngày, vay nóng 10% phí & lãi ngày
 │   │   ├── achievements.ts    # Thẩm định mở khóa danh hiệu & thành tựu
 │   │   ├── bot.ts             # Hệ thống Bot mô phỏng 4 chiến lược kiểm thử 30 ngày & xuất CSV
 │   │   ├── weather.ts         # Chuỗi Markov thời tiết & nhiệt độ TP.HCM
-│   │   ├── save.ts            # Quản lý lưu trữ localStorage & phục hồi trạng thái
+│   │   ├── save.ts            # Quản lý lưu trữ localStorage, schemaVersion & migration
 │   │   ├── types.ts           # Toàn bộ Interface, Type definitions & Action types
 │   │   └── engine.ts          # Game loop, step, dispatch & view model
 │   ├── ui/                    # Giao diện người dùng React 19 + Tailwind CSS
@@ -83,20 +87,27 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **Headless Simulation**:
 │   │   └── App.tsx            # Bố cục giao diện Desktop 3 cột & Mobile Tabs
 │   ├── main.tsx
 │   └── index.css
-├── tests/                     # 11 test suites kiểm thử tự động với Vitest
+├── tests/                     # 18 test suites kiểm thử tự động với Vitest
 │   ├── sim/
 │   │   ├── time.test.ts
 │   │   ├── stats.test.ts
 │   │   ├── vehicle_wear.test.ts
 │   │   ├── accidents.test.ts
-│   │   ├── events.test.ts
+│   │   ├── traffic.test.ts
+│   │   ├── economy.test.ts
+│   │   ├── weather.test.ts
+│   │   ├── platform.test.ts
 │   │   ├── skills.test.ts
 │   │   ├── world_society.test.ts
 │   │   ├── achievements.test.ts
+│   │   ├── save.test.ts
+│   │   ├── determinism.test.ts
 │   │   ├── orders.test.ts
 │   │   ├── engine.test.ts
-│   │   └── bot.test.ts
-│   └── DECISIONS.md           # Nhật ký các quyết định thiết kế & kiến trúc
+│   │   ├── bot.test.ts
+│   │   └── benchmark.test.ts
+├── DECISIONS.md               # Nhật ký các quyết định thiết kế & kiến trúc (thư mục gốc)
+├── LICENSE                    # Giấy phép phần mềm mã nguồn mở MIT
 └── package.json
 ```
 
@@ -154,35 +165,37 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **Headless Simulation**:
 
 ---
 
-## 📊 Bảng tổng hợp Kiểm thử Bot Mô phỏng 30 Ngày (Mục 19)
+## 📊 Bảng tổng hợp Kiểm thử Bot Mô phỏng Multi-Seed (Mục 19)
 
-Kiểm thử tự động trên lõi headless với 4 nhóm tính cách tài xế đặc trưng:
+Kiểm thử tự động chạy trên lõi headless qua 5 seed ngẫu nhiên độc lập (`tests/sim/benchmark.test.ts`):
 
-| Chiến lược Bot | Thời gian sống | Tổng số cuốc | Tổng lợi nhuận ròng | Nợ ngủ trung bình | Kết quả & Đánh giá |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Balanced Bot** (Cân bằng) | **30+ ngày** *(Sống sót)* | **1.128 cuốc** | **+18.201.764 đ** | $\approx 0.1$ giờ | Tồn tại bền vững, thu nhập ròng vượt xa mốc 8 triệu VND; tự động bảo dưỡng xe định kỳ; không kiệt sức hay tai nạn nặng. |
-| **Workaholic Bot** (Ham chạy) | **1 – 2 ngày** *(Sụp đổ)* | 0 – 35 cuốc | 0 đ | $> 15$ giờ | **Sụp đổ hoàn toàn trong vòng $\le 7$ ngày** do kiệt sức và bất tỉnh vì chạy liên tục không ngủ, đúng theo mục tiêu thiết kế. |
-| **Lazy Bot** (Lười biếng) | **30+ ngày** *(Sống sót)* | ~450 cuốc | Thấp (~4 – 6 triệu đ) | 0 giờ | Sống sót an toàn nhờ ngủ 10h/ngày, nhưng thu nhập chỉ đủ chi trả tiền ăn và tiền xăng, không dư dả trả nợ xe. |
-| **Peak Hunter Bot** (Săn cao điểm) | **30+ ngày** *(Sống sót)* | ~600 cuốc | **Hiệu suất/giờ cao nhất** | 0 giờ | Chỉ bật app lúc 7h-9h và 17h-19h30, tối đa hóa doanh thu trên mỗi giờ online thực tế. |
+| Chiến lược Bot | Chu kỳ mục tiêu | Thời gian sống (Min – Max – Avg) | Tổng số cuốc (Avg) | Tổng lợi nhuận ròng (Min – Max – Avg) | Tỷ lệ sụp đổ | Đánh giá & Khớp Đặc Tả Mục 19 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Balanced Bot** (Cân bằng) | **30 ngày** | **32 ngày** (32 – 32 – 32) | **962 cuốc** | 10.879k – 12.456k (**+11.529.619 đ**) | **0%** *(Sống sót)* | Bền vững tuyệt đối. Thu nhập ròng đạt ~360k/ngày (thuộc khoảng chuẩn 350k–550k/ngày sau khi trừ 50k tiền trọ và tiền ăn); tự bảo dưỡng xe định kỳ; không kiệt sức. |
+| **Workaholic Bot** (Ham chạy) | **7 ngày** | **3 ngày** (2 – 5 – 3) | **116 cuốc** | 942k – 1.323k (**+1.070.657 đ**) | **100%** *(Sụp đổ)* | **Sụp đổ trong vòng $\le 7$ ngày** đúng spec. 2–3 ngày đầu kiếm rất tốt (>350k–500k/ngày sau chi phí) tạo "bẫy cày cuốc", sau đó nợ ngủ >12h gây ngất xỉu hoặc tai nạn nghiêm trọng. |
+| **Lazy Bot** (Lười biếng) | **7 ngày** | **7 ngày** (7 – 7 – 7) | **59 cuốc** | -347k – +321k (**+14.596 đ**) | **0%** *(Sống sót)* | Chỉ chạy 4h/ngày, sống sót an toàn nhờ ngủ 10h nhưng sau khi trừ tiền phòng trọ (50k/ngày) và ăn uống thì lợi nhuận ròng xấp xỉ 0 hoặc âm; không đủ trả nợ mua xe. |
+| **Peak Hunter Bot** (Săn cao điểm) | **7 ngày** | **7 ngày** (7 – 7 – 7) | **79 cuốc** | 440k – 1.329k (**+908.178 đ**) | **0%** *(Sống sót)* | **Hiệu suất thu nhập trên giờ làm việc cao nhất** (~29.000 đ net/h online thực tế). Chiến lược này tối ưu thời gian nhưng tổng thu nhập tháng không bằng Balanced Bot (đúng spec). |
 
 ---
 
 ## ⚙️ Hướng dẫn Cân bằng Game (`data/balance.json`)
 
-Tất cả các hằng số sinh học, suy hao và thời gian được cấu hình tập trung trong `data/balance.json`:
+Tất cả các hằng số sinh học, suy hao, tiền trọ và thời gian được cấu hình tập trung trong `data/balance.json` (khớp hoàn toàn giữa code và tài liệu):
 
-* `timeScale`: Tốc độ 1 giờ game tương đương 90 giây thời gian thực ở tốc độ x1.
-* `statsDecay`:
-  * `staminaPerMinute`: Suy hao thể lực cơ bản mỗi phút khi lái xe (-0.22/phút) hoặc chờ khách (-0.08/phút).
-  * `hungerPerMinute`: Tốc độ đói bụng (-0.12/phút).
-  * `alertnessPerMinute`: Suy giảm tỉnh táo theo thời gian trong ngày (-0.15/phút).
-  * `moralePerMinute`: Biến thiên tinh thần phụ thuộc vào nắng nóng, kẹt xe và mệt mỏi.
-* `coffee`: Thời gian tỉnh táo bùng nổ (180 phút), mức tụt dốc sau khi hết tác dụng (-25 tỉnh táo) và hệ số kháng thuốc từ ly thứ 3.
-* `nap`: Thời lượng chợp mắt (20 phút), hồi phục (+15 tỉnh táo, +5 thể lực) và thời gian chờ giãn cách (cooldown 240 phút).
-* `sleepDebt`: Ngưỡng nợ ngủ nguy hiểm ($>10$h bắt đầu suy giảm sức khỏe, $\ge 24$h kiệt sức sụp đổ).
-* `tetSeason`: Các ngày diễn ra Tết Nguyên Đán (ngày 25 đến ngày 33), hệ số thưởng giá cước và chi phí vé xe Tết về quê.
+* `time`: Bắt đầu lúc 05:00 sáng; 1 giờ game = 90 giây thời gian thực ở tốc độ x1 (1 tick = 1 phút game = 1.5 giây thực).
+* `livingCosts`: Tiền thuê phòng trọ bình dân 50.000đ/ngày (1.500.000đ/tháng), tự động khấu trừ vào 05:00 sáng mỗi ngày.
+* `stats`:
+  * **Thể lực (`stamina`)**: Lái xe: **-5.0/giờ** (-0.083/phút); Chờ khách: **-1.5/giờ** (-0.025/phút); Nghỉ ngơi: **-0.5/giờ**; Nắng nóng $\ge 34^\circ\text{C}$: cộng thêm -2.0/giờ; Mưa to/bão: cộng thêm -2.0/giờ; Ngủ: hồi phục **+12.0/giờ** (bị giảm hiệu suất nếu có mệt nền `baseFatigue`).
+  * **No (`hunger`)**: Tiêu hao cơ bản: **-4.0/giờ** (-0.067/phút); Khi đói bụng (< 20%) làm tụt tinh thần -2.0/giờ; Đói lả (< 10%) gây hao mòn -2.0 sức khỏe/giờ.
+  * **Tỉnh táo (`alertness`)**: Ban ngày (6h–22h): **-3.0/giờ** (-0.05/phút); Ban đêm (23h–5h): **-6.0/giờ** (-0.10/phút); Nhân hệ số phạt nợ ngủ ($1 + 0.15 \times \text{sleepDebt}$); Ngủ hồi phục **+14.0/giờ**.
+  * **Cà phê (`coffee`)**: Tăng tức thì **+20 tỉnh táo**; sau 3 giờ hết tác dụng bị sụt pin **-15 tỉnh táo**; uống từ ly thứ 3 bị nhờn thuốc (giảm hồi phục) và trừ -2 sức khỏe dài hạn.
+  * **Chợp mắt (`nap`)**: Chợp mắt 20 phút hồi **+15 tỉnh táo, +5 thể lực**; thời gian hồi chiêu (cooldown): 240 phút (4 tiếng).
+  * **Nợ ngủ (`sleepDebt`)**: Chuẩn 7 giờ ngủ/ngày; thiếu ngủ tích lũy nợ ngủ; nợ ngủ $\ge 10$h làm suy giảm sức khỏe -3/ngày; nợ ngủ $\ge 18$h dẫn đến sụp đổ kiệt sức.
+* `tetSeason`: Diễn ra từ ngày 25 đến 33; giá cước Surge x1.6–x2.0; lựa chọn về quê ăn Tết (vé xe 800k, hồi phục +30 sức khỏe, tinh thần 90, giảm 50% nợ ngủ, nghỉ chạy mùng 1-3).
+* `accidents`: Tai nạn nghiêm trọng khiến tài xế phải nằm viện điều trị từ 3 đến 14 ngày (randomized), viện phí 5–15 triệu đồng.
+* `emergencyLoan`: Vay nóng khẩn cấp chịu phí dịch vụ 10% cắt trước và lãi suất lũy tiến 0.5%/ngày (~15%/tháng).
 
 ---
 
 ## 📜 Giấy phép & Bản quyền
-Dự án được xây dựng với mục đích nghiên cứu, giáo dục và mô phỏng xã hội. Mọi số liệu và địa danh dựa trên thực tế giao thông và đời sống tài xế công nghệ tại Thành phố Hồ Chí Minh.
+Dự án phát hành theo giấy phép mã nguồn mở **MIT License** (xem chi tiết tại [`LICENSE`](file:///d:/01_Projects/AntiGravity/TaiXe/LICENSE)). Mọi số liệu và địa danh dựa trên thực tế đời sống tài xế công nghệ tại Thành phố Hồ Chí Minh.

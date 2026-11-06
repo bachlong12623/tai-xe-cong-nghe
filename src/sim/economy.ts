@@ -16,6 +16,7 @@ export function createInitialEconomy(): EconomyState {
       fuel: 0,
       maintenance: 0,
       fines: 0,
+      rent: 0,
       other: 0,
     },
     todayTrips: 0,
@@ -38,12 +39,13 @@ export function generateDailySummary(
   const fuelCost = economy.todayExpenses.fuel;
   const foodCost = economy.todayExpenses.food;
   const finesAndRepairs = economy.todayExpenses.maintenance + economy.todayExpenses.fines;
+  const rentCost = economy.todayExpenses.rent;
   
   // Estimated wear & depreciation per km: ~350 VND / km
   const totalKm = economy.todayKmPassenger + economy.todayKmEmpty;
   const vehicleWearEstimate = Math.round(totalKm * 350);
 
-  const netProfit = grossRevenue - platformCommission - fuelCost - foodCost - finesAndRepairs - vehicleWearEstimate;
+  const netProfit = grossRevenue - platformCommission - fuelCost - foodCost - finesAndRepairs - vehicleWearEstimate - rentCost;
   
   const hoursOnline = Math.max(0.1, economy.minutesOnlineToday / 60);
   const hourlyNetProfit = Math.round(netProfit / hoursOnline);
@@ -56,6 +58,7 @@ export function generateDailySummary(
     foodCost,
     finesAndRepairs,
     vehicleWearEstimate,
+    rentCost,
     netProfit,
     hourlyNetProfit,
     tripsCount: economy.todayTrips,
@@ -76,6 +79,7 @@ export function generateDailySummary(
       fuel: 0,
       maintenance: 0,
       fines: 0,
+      rent: 0,
       other: 0,
     },
     todayTrips: 0,

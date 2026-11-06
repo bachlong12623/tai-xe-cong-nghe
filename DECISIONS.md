@@ -144,3 +144,25 @@ Tài liệu này lưu lại các quyết định kỹ thuật, giả định và
   - **Kiểm Thử Toàn Diện & Đóng Gói Production**:
     - Đạt 56/56 unit & integration tests pass 100% trên Vitest (`tests/sim/*.test.ts`).
     - Build production Vite sạch sẽ, tối ưu hóa CSS & JS bundle, chạy mượt mà trên Desktop và Mobile.
+
+## 010. Tinh Chỉnh Cân Bằng & Cải Thiện Kiến Trúc Sau Review
+- **Ngày**: 06/11/2026
+- **Quyết định & Nội dung hoàn thiện**:
+  - **Khắc phục sai lệch tài liệu suy hao chỉ số**:
+    - Khẳng định giá trị thực trong code và `data/balance.json` từ đầu đã là: Thể lực khi lái (-5.0/h), khi chờ (-1.5/h); No (-4.0/h); Tỉnh táo (-3.0/h ngày, -6.0/h đêm); Cà phê sụt pin (-15). Đồng bộ lại `README.md` để loại bỏ các số liệu viết nhầm (-0.22/phút, -25).
+  - **Bổ sung Chi phí Sinh hoạt Cố định (Tiền phòng trọ)**:
+    - Thêm khoản tiền trọ bình dân 50.000đ/ngày (1.500.000đ/tháng) tự động trừ vào 05:00 sáng mỗi ngày.
+    - Hiển thị rõ ràng trong bảng tổng kết cuối ngày và trừ trực tiếp vào lợi nhuận thực tế. Giải quyết triệt để lý do khiến LazyBot trước đây bị "lãi ảo".
+  - **Hiệu chỉnh Bot Ham chạy (Workaholic Bot) bám sát Đặc tả Mục 19**:
+    - Tinh chỉnh chiến thuật: Chạy cật lực 18-19h/ngày, chỉ ngủ 4h đêm (01:00-05:00) và chợp mắt ngắn giữa trưa để duy trì 2-4 ngày đầu đạt doanh thu cao ngất ngưởng (700k-1tr+).
+    - Tích lũy nợ ngủ (+3h/ngày) và mệt nền (+10%/ngày), dẫn đến sụp đổ kiệt sức hoặc tai nạn mất lái trong vòng 2-5 ngày (đạt 100% tỷ lệ sụp đổ $\le 7$ ngày).
+  - **Tái cân bằng Quyết định Tết & Vay nóng**:
+    - Về quê ăn Tết không còn là "nút reset toàn năng": Chi phí 800.000đ vé xe, hồi phục +30 Sức khỏe (tối đa 85%), Tinh thần đạt 90, giảm 50% nợ ngủ, và khóa không cho bật app trong những ngày nghỉ Tết (mùng 1-3).
+    - Vay nóng: Áp dụng phí dịch vụ cắt đầu 10% và tăng lãi suất ngày lên 0.5%/ngày (~15%/tháng), mô phỏng vòng xoáy nợ thực tế.
+    - Tai nạn nặng: Thời gian nằm viện được tính ngẫu nhiên từ 3 đến 14 ngày thay vì cố định.
+  - **Triệt tiêu Non-determinism trong Core Simulation**:
+    - Loại bỏ hoàn toàn các lời gọi `Date.now()` trong sinh ID đơn hàng và log sự kiện (`engine.ts`, `orders.ts`). Thay bằng bộ sinh định danh thuần theo phút mô phỏng (`time.totalMinutes`) và PRNG.
+    - Đảm bảo 100% byte-for-byte state hash đồng nhất qua các lần chạy độc lập có cùng seed.
+  - **Mở rộng Bộ Kiểm Thử & CI**:
+    - Thêm 6 bộ test chuyên sâu: `economy.test.ts`, `traffic.test.ts`, `weather.test.ts`, `platform.test.ts`, `save.test.ts`, `determinism.test.ts`, nâng tổng số test lên **76 tests qua 18 test suites**.
+    - Thiết lập GitHub Actions CI tự động (`.github/workflows/ci.yml`), bổ sung `LICENSE` MIT và sao chép đặc tả vào `docs/SPEC.md`.

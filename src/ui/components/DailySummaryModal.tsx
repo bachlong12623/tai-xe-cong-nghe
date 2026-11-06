@@ -7,7 +7,8 @@ import {
   Wrench, 
   TrendingUp, 
   CheckCircle,
-  HelpCircle
+  HelpCircle,
+  Home
 } from 'lucide-react';
 
 interface DailySummaryModalProps {
@@ -115,6 +116,18 @@ export const DailySummaryModal: React.FC<DailySummaryModalProps> = ({ isOpen, su
               -{summary.vehicleWearEstimate.toLocaleString('vi-VN')} đ
             </span>
           </div>
+
+          {summary.rentCost > 0 && (
+            <div className="flex justify-between items-center text-neutral-300">
+              <span className="flex items-center gap-1.5 text-neutral-400">
+                <Home className="w-3.5 h-3.5 text-blue-400" />
+                Tiền phòng trọ cố định:
+              </span>
+              <span className="font-mono text-rose-400">
+                -{summary.rentCost.toLocaleString('vi-VN')} đ
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Operating Stats Footnote */}

@@ -98,16 +98,17 @@ describe('Milestone 5 World & Society - 12 Zones, Vehicles, CSGT, Goals & NPC', 
     expect(game.economy.cash).toBe(1000000);
     expect(game.goal.currentAmount).toBe(1000000);
 
-    // Emergency loan
+    // Emergency loan (with 10% fee and higher interest)
     const initialDebt = game.loan.totalPrincipal;
     game = dispatch(game, { t: 'TAKE_EMERGENCY_LOAN', amount: 1000000 });
     expect(game.loan.totalPrincipal).toBe(initialDebt + 1000000);
-    expect(game.economy.cash).toBe(2000000);
+    expect(game.economy.cash).toBe(1900000); // 1,000,000 + 900,000 (after 10% fee)
+    expect(game.loan.dailyInterestRate).toBe(0.005);
 
     // Repay loan
     game = dispatch(game, { t: 'REPAY_LOAN', amount: 500000 });
     expect(game.loan.totalPrincipal).toBe(initialDebt + 500000);
-    expect(game.economy.cash).toBe(1500000);
+    expect(game.economy.cash).toBe(1400000);
   });
 
   it('generates NPC community messages with distinct personalities and news', () => {

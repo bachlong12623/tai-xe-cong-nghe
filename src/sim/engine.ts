@@ -53,6 +53,7 @@ import spotsData from '../../data/spots.json';
 import zonesData from '../../data/zones.json';
 import goalsData from '../../data/goals.json';
 import vehiclesData from '../../data/vehicles.json';
+import balanceData from '../../data/balance.json';
 
 export function createGame(seed: number = Date.now()): GameState {
   const rng = createRng(seed);
@@ -122,14 +123,13 @@ export function createGame(seed: number = Date.now()): GameState {
   };
 }
 
-let logCounter = 1;
 export function addLog(
   state: GameState,
   text: string,
   type: LogMessage['type'] = 'info'
 ): GameState {
   const newLog: LogMessage = {
-    id: `log_${Date.now()}_${logCounter++}`,
+    id: `log_${state.time.totalMinutes}_${state.logs.length + 1}`,
     minute: state.time.totalMinutes,
     timeFormatted: formatTime24h(state.time.hour, state.time.minute),
     text,
@@ -507,6 +507,23 @@ export function stepOneMinute(state: GameState): GameState {
       }
     }
 
+    // Daily room rent deduction (50.000đ)
+    const dailyRent = (balanceData as any).livingCosts?.dailyRent || 50000;
+    if (s.economy.cash >= dailyRent) {
+      s.economy.cash -= dailyRent;
+      s.economy.todayExpenses.rent += dailyRent;
+      s = addLog(s, `🏠 Trừ tiền phòng trọ hôm nay: -${dailyRent.toLocaleString('vi-VN')}đ.`, 'info');
+    } else if (s.economy.appWallet >= dailyRent) {
+      s.economy.appWallet -= dailyRent;
+      s.economy.todayExpenses.rent += dailyRent;
+      s = addLog(s, `🏠 Trích ví app trừ tiền phòng trọ: -${dailyRent.toLocaleString('vi-VN')}đ.`, 'info');
+    } else {
+      s.loan.totalPrincipal += dailyRent;
+      s.economy.todayExpenses.rent += dailyRent;
+      s.stats.morale = Math.max(0, s.stats.morale - 5);
+      s = addLog(s, `⚠️ Không đủ tiền trả tiền phòng trọ ${dailyRent.toLocaleString('vi-VN')}đ! Chủ trọ cằn nhằn ghi nợ phát sinh.`, 'warning');
+    }
+
     const summaryRes = generateDailySummary(s.economy, s.time.day - 1, s.stats);
     s.economy = summaryRes.economy;
     const summary = summaryRes.summary;
@@ -516,7 +533,7 @@ export function stepOneMinute(state: GameState): GameState {
     s.historySummaries = [...s.historySummaries, summary].slice(-30);
     s.speed = 0;
 
-    const summaryText = `[Tổng kết Ngày ${summary.day}]: Thu nhập thực: ${summary.netProfit.toLocaleString('vi-VN')}đ (${summary.hourlyNetProfit.toLocaleString('vi-VN')}đ/h online). Xăng: ${summary.fuelCost.toLocaleString('vi-VN')}đ, Ăn uống: ${summary.foodCost.toLocaleString('vi-VN')}đ.`;
+    const summaryText = `[Tổng kết Ngày ${summary.day}]: Thu nhập thực: ${summary.netProfit.toLocaleString('vi-VN')}đ (${summary.hourlyNetProfit.toLocaleString('vi-VN')}đ/h online). Xăng: ${summary.fuelCost.toLocaleString('vi-VN')}đ, Ăn uống: ${summary.foodCost.toLocaleString('vi-VN')}đ, Phòng trọ: ${summary.rentCost.toLocaleString('vi-VN')}đ.`;
     s = addLog(s, summaryText, summary.netProfit >= 0 ? 'success' : 'warning');
   }
 
@@ -664,6 +681,9 @@ export function dispatch(state: GameState, action: Action): GameState {
     }
 
     case 'GO_ONLINE': {
+      if (s.choseTetHome && s.time.day >= 28 && s.time.day <= 32) {
+        return addLog(s, '🧧 Bạn đang ở quê nghỉ Tết cùng gia đình, mùng 4 mới trở lại Sài Gòn mở app chạy tiếp!', 'info');
+      }
       if (s.isSleeping) {
         return addLog(s, 'Không thể bật app khi đang ngủ!', 'warning');
       }
@@ -1058,9 +1078,16 @@ export function dispatch(state: GameState, action: Action): GameState {
 
     case 'TAKE_EMERGENCY_LOAN': {
       const amt = action.amount;
-      s.economy.cash += amt;
+      const upfrontFee = Math.round(amt * 0.1); // 10% fee
+      const actualCashReceived = amt - upfrontFee;
+      s.economy.cash += actualCashReceived;
       s.loan.totalPrincipal += amt;
-      return addLog(s, `💵 Đã nhận tiền vay khẩn cấp +${amt.toLocaleString('vi-VN')}đ vào tiền mặt. Dư nợ gốc hiện tại: ${s.loan.totalPrincipal.toLocaleString('vi-VN')}đ.`, 'warning');
+      s.loan.dailyInterestRate = Math.max(s.loan.dailyInterestRate, 0.005); // 0.5%/day
+      return addLog(
+        s,
+        `💵 Đã vay nóng ${amt.toLocaleString('vi-VN')}đ (cắt phí dịch vụ 10%: -${upfrontFee.toLocaleString('vi-VN')}đ, thực nhận ${actualCashReceived.toLocaleString('vi-VN')}đ). Lãi suất tăng lên 0.5%/ngày! Dư nợ: ${s.loan.totalPrincipal.toLocaleString('vi-VN')}đ.`,
+        'warning'
+      );
     }
 
     case 'REPAY_LOAN': {
@@ -1123,12 +1150,12 @@ export function dispatch(state: GameState, action: Action): GameState {
         };
         s.stats = {
           ...s.stats,
-          health: 100,
-          morale: 100,
-          sleepDebt: 0,
+          health: Math.min(85, s.stats.health + 30),
+          morale: 90,
+          sleepDebt: Math.round(s.stats.sleepDebt * 0.5),
         };
         s.app = { ...s.app, isOnline: false, activeTrip: null };
-        return addLog(s, '🧧 Bạn đã quyết định về quê ăn Tết cùng mẹ và gia đình! Vé xe Tết -800.000đ. Tinh thần & Sức khỏe hồi phục 100%!', 'event');
+        return addLog(s, '🧧 Bạn đã mua vé xe 800.000đ về quê đón Tết cùng gia đình! Nghỉ ngơi sum vầy giúp hồi phục +30 Sức khỏe (tối đa 85%), Tinh thần đạt 90, giảm 50% nợ ngủ. Trong những ngày Tết, bạn tạm dừng chạy xe.', 'event');
       } else {
         s.stats.morale = Math.max(10, s.stats.morale - 10);
         return addLog(s, '🏍️ Bạn chọn ở lại Sài Gòn cày Tết! Giá cước sẽ tăng vọt nhưng nhớ gọi điện chúc Tết mẹ ở quê.', 'event');

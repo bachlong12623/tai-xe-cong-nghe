@@ -137,13 +137,14 @@ export function rollForAccident(
     // Severe
     const repairCost = Math.round(nextInt(rng, 3500000, 6500000) / 100000) * 100000;
     const medicalCost = Math.round(nextInt(rng, 5000000, 15000000) / 500000) * 500000;
+    const daysOff = nextInt(rng, 3, 14);
     return {
       severity: 'severe',
       title: 'Tai nạn giao thông nghiêm trọng',
       description: 'Mất lái lúc đêm khuya tông phải dải phân cách. Bạn phải nhập viện cấp cứu kiểm tra xương khớp và nằm viện điều trị!',
       repairCost,
       medicalCost,
-      daysOff: 4,
+      daysOff,
       healthPenalty: 30,
       moralePenalty: 28,
     };
