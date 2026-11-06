@@ -28,3 +28,4 @@ jobs:
 
       - name: Build Production Bundle (Typecheck & Vite)
         run: npm run build
+

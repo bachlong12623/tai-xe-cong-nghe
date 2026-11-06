@@ -38,3 +38,4 @@ describe('Weather System (Section 8)', () => {
     expect(typesSeen.size).toBeGreaterThan(1);
   });
 });
+

@@ -48,3 +48,4 @@ describe('Economy & Living Costs (Section 6 & 19)', () => {
     expect(nextEco.lastDaySummary).toEqual(summary);
   });
 });
+
