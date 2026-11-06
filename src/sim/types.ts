@@ -270,6 +270,13 @@ export interface GameState {
   activePoliceFine: PoliceFineEvent | null;
   goal: CharacterGoal;
   loan: LoanState;
+
+  // Milestone 6 additions
+  difficulty: 'easy' | 'normal' | 'hard';
+  unlockedAchievements: string[];
+  isTetSeason: boolean;
+  choseTetHome: boolean | null;
+  historySummaries: DailySummary[];
 }
 
 export type Action =
@@ -305,4 +312,8 @@ export type Action =
   | { t: 'BUY_VEHICLE'; vehicleId: string; paymentMode: 'cash' | 'installment' }
   | { t: 'SWITCH_VEHICLE'; vehicleId: string }
   | { t: 'SWAP_BATTERY' }
-  | { t: 'CHARGE_VEHICLE'; durationMinutes?: number };
+  | { t: 'CHARGE_VEHICLE'; durationMinutes?: number }
+  // Milestone 6 Actions
+  | { t: 'SET_DIFFICULTY'; difficulty: 'easy' | 'normal' | 'hard' }
+  | { t: 'CHOOSE_TET_DECISION'; goHome: boolean }
+  | { t: 'UNLOCK_ACHIEVEMENT'; achievementId: string };

@@ -115,3 +115,32 @@ Tài liệu này lưu lại các quyết định kỹ thuật, giả định và
   - **Kiểm thử & Chất lượng**:
     - 49/49 unit & bot test cases pass 100%.
     - Production build Vite hoàn tất trong 4.59s không có lỗi TypeScript hay cảnh báo.
+
+## 009. Nghiệm thu Mốc 6 (Hoàn Thiện, Đánh Bóng & Cân Bằng Toàn Diện)
+- **Ngày**: 06/11/2026
+- **Nội dung hoàn thành**:
+  - **Hệ thống Danh hiệu & Thành tựu (Achievements)**:
+    - Định nghĩa 12 thành tựu đa dạng trong `data/achievements.json` bao quát toàn bộ hành trình khởi nghiệp tài xế: Chuyến xe đầu tiên, Cần cù bù thông minh (10 cuốc/ngày), Chiến binh áo mưa, Cú đêm Sài Gòn, Khách quý ấm lòng (tip $\ge$ 30k), Bác tài 5 sao, Xe chính chủ, Kỷ nguyên Xanh (xe điện), Lên đời 4 bánh (taxi Vios), Triệu phú đường phố ($\ge$ 10tr tiền mặt), Sức khỏe là vàng, 1 Tuần Trụ Vững.
+    - Bộ thẩm định `evaluateAchievements` tự động ghi nhận và đồng bộ vào `GameState`.
+    - Giao diện modal tôn vinh thành tích `AchievementsModal` kèm âm thanh chuông mừng.
+  - **Báo cáo Thống kê Dài Hạn (Long-term Statistics Tracking)**:
+    - Mở rộng `GameState` lưu trữ toàn bộ lịch sử tổng kết ngày `historySummaries`.
+    - Modal thống kê `StatisticsModal` hiển thị bảng dữ liệu lũy kế: Tổng doanh thu, Lợi nhuận thực, Số cuốc xe, Quãng đường lăn bánh, Chi phí xăng xe & ăn uống, Tốc độ kiếm tiền theo giờ (VND/giờ).
+  - **Mùa Tết Nguyên Đán & Quyết Định Về Quê**:
+    - Chu kỳ Tết Nguyên Đán kích hoạt từ ngày 25 đến 33 với hệ số Surge cao vọt (x1.6 đến x2.0).
+    - Modal quyết định `TetHolidayModal` cho người chơi lựa chọn nhân văn: Mua vé xe 800.000đ về quê đón Tết với mẹ (hồi phục 100% Sức khỏe, Tinh thần và xóa sạch nợ ngủ) HOẶC ở lại Sài Gòn cày xuyên Tết kiếm tiền triệu mỗi ngày.
+  - **Hệ thống Âm Thanh Synthesizer Web Audio API Thuần Mã**:
+    - Viết hoàn toàn bằng Web Audio API trong `src/ui/utils/sound.ts` (0% phụ thuộc file âm thanh ngoài):
+      - Tiếng chuông nổ đơn app (`playOrderPing`).
+      - Tiếng leng keng nhận tiền mặt / ví app (`playMoney`).
+      - Còi hú CSGT lập biên bản vi phạm (`playPoliceSiren`).
+      - Tiếng va quẹt tai nạn (`playCrash`).
+      - Nhạc vinh danh thăng hạng / mở khóa thành tựu (`playLevelUp`).
+      - Nút Mute / Unmute tức thì trên `TopBar`.
+  - **Kiểm Thử Bot Tự Động & Cân Bằng Kinh Tế 30 Ngày (Mục 19)**:
+    - `BalancedBot` tồn tại ổn định suốt 30 ngày (đạt 32 ngày liên tục), doanh thu ròng đạt > 18.200.000đ (vượt mốc mục tiêu 8.000.000đ), hoàn thành 1.128 cuốc xe, giữ nợ ngủ an toàn, tự động ghé tiệm bảo dưỡng lốp/nhớt/bố thắng.
+    - `WorkaholicBot` cày cuốc kiệt sức và sụp đổ hoàn toàn trong vòng $\le 7$ ngày (ngất xỉu/kiệt sức).
+    - `LazyBot` và `PeakHunterBot` thể hiện chính xác các quy luật đánh đổi hiệu suất thời gian.
+  - **Kiểm Thử Toàn Diện & Đóng Gói Production**:
+    - Đạt 56/56 unit & integration tests pass 100% trên Vitest (`tests/sim/*.test.ts`).
+    - Build production Vite sạch sẽ, tối ưu hóa CSS & JS bundle, chạy mượt mà trên Desktop và Mobile.

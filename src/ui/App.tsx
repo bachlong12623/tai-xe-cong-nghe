@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { TopBar } from './components/TopBar';
 import { CharacterPanel } from './components/CharacterPanel';
@@ -14,6 +14,10 @@ import { CommunityModal } from './components/CommunityModal';
 import { GoalsModal } from './components/GoalsModal';
 import { VehicleShopModal } from './components/VehicleShopModal';
 import { PoliceFineModal } from './components/PoliceFineModal';
+import { AchievementsModal } from './components/AchievementsModal';
+import { StatisticsModal } from './components/StatisticsModal';
+import { TetHolidayModal } from './components/TetHolidayModal';
+import { sound } from './utils/sound';
 import { User, Map, Smartphone, Terminal } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -28,18 +32,76 @@ export const App: React.FC = () => {
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
   const [isVehicleShopModalOpen, setIsVehicleShopModalOpen] = useState(false);
+  const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
+  const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
+  const [isTetModalOpen, setIsTetModalOpen] = useState(false);
+
+  // Sound triggers via state tracking
+  const prevOfferIdRef = useRef<string | null>(null);
+  const prevTripsCountRef = useRef<number>(state.app.totalTripsCompleted);
+  const prevFineRef = useRef<any>(null);
+  const prevAccidentRef = useRef<any>(null);
+  const prevAchievementsCountRef = useRef<number>(view.unlockedAchievements.length);
+
+  useEffect(() => {
+    // Ping on new offer
+    const currentOfferId = view.currentOffer?.id ?? null;
+    if (currentOfferId && currentOfferId !== prevOfferIdRef.current) {
+      sound.playOrderPing();
+    }
+    prevOfferIdRef.current = currentOfferId;
+
+    // Money chime on trip completion
+    if (state.app.totalTripsCompleted > prevTripsCountRef.current) {
+      sound.playMoney();
+    }
+    prevTripsCountRef.current = state.app.totalTripsCompleted;
+
+    // Siren on police fine
+    if (view.activePoliceFine && !prevFineRef.current) {
+      sound.playPoliceSiren();
+    }
+    prevFineRef.current = view.activePoliceFine;
+
+    // Crash sound on accident
+    if (view.activeAccident && !prevAccidentRef.current) {
+      sound.playCrash();
+    }
+    prevAccidentRef.current = view.activeAccident;
+
+    // Level up chime on achievement unlocked
+    if (view.unlockedAchievements.length > prevAchievementsCountRef.current) {
+      sound.playLevelUp();
+    }
+    prevAchievementsCountRef.current = view.unlockedAchievements.length;
+  }, [
+    view.currentOffer,
+    state.app.totalTripsCompleted,
+    view.activePoliceFine,
+    view.activeAccident,
+    view.unlockedAchievements.length,
+  ]);
+
+  // Prompt Tet modal when day 27 arrives and player hasn't chosen yet
+  useEffect(() => {
+    if (view.isTetSeason && view.choseTetHome === null && view.day >= 27) {
+      setIsTetModalOpen(true);
+    }
+  }, [view.isTetSeason, view.choseTetHome, view.day]);
 
   // Mobile active tab
   const [mobileTab, setMobileTab] = useState<'char' | 'map' | 'app' | 'logs'>('char');
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
-      {/* Top Bar with Time, Finances, Speed, Save/Reset */}
+      {/* Top Bar with Time, Finances, Speed, Save/Reset, Achievements, Statistics */}
       <TopBar
         view={view}
         dispatch={dispatch}
         onSave={saveGameNow}
         onReset={() => resetGame()}
+        onOpenAchievements={() => setIsAchievementsModalOpen(true)}
+        onOpenStatistics={() => setIsStatisticsModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -211,6 +273,29 @@ export const App: React.FC = () => {
         summary={view.pendingSummary}
         onClose={() => dispatch({ t: 'CLOSE_SUMMARY_MODAL' })}
       />
+
+      {/* Milestone 6 Modals */}
+      {isAchievementsModalOpen && (
+        <AchievementsModal
+          unlockedIds={view.unlockedAchievements}
+          onClose={() => setIsAchievementsModalOpen(false)}
+        />
+      )}
+
+      {isStatisticsModalOpen && (
+        <StatisticsModal
+          currentDay={view.day}
+          historySummaries={state.historySummaries}
+          onClose={() => setIsStatisticsModalOpen(false)}
+        />
+      )}
+
+      {isTetModalOpen && (
+        <TetHolidayModal
+          onChoose={(goHome) => dispatch({ t: 'CHOOSE_TET_DECISION', goHome })}
+          onClose={() => setIsTetModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

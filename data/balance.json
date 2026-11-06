@@ -53,6 +53,38 @@
   "initialFinances": {
     "cash": 300000,
     "appWallet": 150000
+  },
+  "difficulties": {
+    "easy": {
+      "name": "Dễ thở",
+      "costModifier": 0.85,
+      "decayModifier": 0.85,
+      "fareModifier": 1.15,
+      "description": "Chi phí rẻ hơn, sức khỏe dẻo dai hơn, giá cước ưu đãi hơn"
+    },
+    "normal": {
+      "name": "Tiêu chuẩn",
+      "costModifier": 1.0,
+      "decayModifier": 1.0,
+      "fareModifier": 1.0,
+      "description": "Trải nghiệm sát thực tế cuộc sống tài xế công nghệ tại TP.HCM"
+    },
+    "hard": {
+      "name": "Khắc nghiệt",
+      "costModifier": 1.2,
+      "decayModifier": 1.25,
+      "fareModifier": 0.95,
+      "description": "Xăng đắt, mệt mỏi nhanh, áp lực tiền trọ và nợ nần đè nặng"
+    }
+  },
+  "tetSeason": {
+    "preTetDayStart": 25,
+    "preTetDayEnd": 30,
+    "tetDayStart": 31,
+    "tetDayEnd": 33,
+    "preTetDemandSurge": 1.6,
+    "tetQuietDemand": 0.35,
+    "holidayBonusMin": 10000,
+    "holidayBonusMax": 30000
   }
 }
-

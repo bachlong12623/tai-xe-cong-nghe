@@ -14,16 +14,21 @@ describe('Bot Simulation & Balance - Section 18 & 19 (Milestone 3)', () => {
     expect(finalReport.sleepDebt).toBeLessThan(5);
   });
 
-  it('Workaholic Bot accumulates dangerous sleep debt (>15h) over multiple days', () => {
+  it('Balanced Bot survives full 30 days with economic stability and > 8,000,000 VND profit (Section 19)', () => {
+    const result = runBotSimulation('balanced', 30, 42);
+
+    expect(result.collapsed).toBe(false);
+    expect(result.daysSurvived).toBeGreaterThanOrEqual(30);
+    expect(result.totalTrips).toBeGreaterThan(500);
+    expect(result.totalNetProfit).toBeGreaterThan(8000000); // Exceeds target 8M VND
+  });
+
+  it('Workaholic Bot collapses within <= 7 days due to exhaustion or sleep debt (Section 19)', () => {
     const result = runBotSimulation('workaholic', 7, 42);
 
-    if (!result.collapsed) {
-      const finalReport = result.dailyReports[result.dailyReports.length - 1];
-      expect(finalReport.sleepDebt).toBeGreaterThan(15);
-    } else {
-      expect(result.daysSurvived).toBeLessThanOrEqual(7);
-      expect(result.collapseReason).toBeDefined();
-    }
+    expect(result.collapsed).toBe(true);
+    expect(result.daysSurvived).toBeLessThanOrEqual(7);
+    expect(result.collapseReason).toBeDefined();
   });
 
   it('Lazy Bot survives but achieves lower trips and earnings than Balanced Bot', () => {

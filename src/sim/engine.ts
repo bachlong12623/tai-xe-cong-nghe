@@ -47,6 +47,7 @@ import {
 import { getActiveCsgtZones, maybeGenerateNpcMessage } from './npc';
 import { checkPoliceViolation } from './violations';
 import { createDefaultGoal, createDefaultLoan, contributeGoal } from './goals';
+import { evaluateAchievements } from './achievements';
 import itemsData from '../../data/items.json';
 import spotsData from '../../data/spots.json';
 import zonesData from '../../data/zones.json';
@@ -112,6 +113,12 @@ export function createGame(seed: number = Date.now()): GameState {
     activePoliceFine: null,
     goal,
     loan,
+    // Milestone 6
+    difficulty: 'normal',
+    unlockedAchievements: [],
+    isTetSeason: false,
+    choseTetHome: null,
+    historySummaries: [],
   };
 }
 
@@ -506,10 +513,26 @@ export function stepOneMinute(state: GameState): GameState {
 
     s.showDailySummaryModal = true;
     s.pendingSummary = summary;
+    s.historySummaries = [...s.historySummaries, summary].slice(-30);
     s.speed = 0;
 
     const summaryText = `[Tổng kết Ngày ${summary.day}]: Thu nhập thực: ${summary.netProfit.toLocaleString('vi-VN')}đ (${summary.hourlyNetProfit.toLocaleString('vi-VN')}đ/h online). Xăng: ${summary.fuelCost.toLocaleString('vi-VN')}đ, Ăn uống: ${summary.foodCost.toLocaleString('vi-VN')}đ.`;
     s = addLog(s, summaryText, summary.netProfit >= 0 ? 'success' : 'warning');
+  }
+
+  // Check Tết season (Days 25-33)
+  if (s.time.day >= 25 && s.time.day <= 33) {
+    s.isTetSeason = true;
+  }
+
+  // Check achievements every 15 minutes
+  if (s.time.minute % 15 === 0) {
+    const achRes = evaluateAchievements(s);
+    if (achRes.unlockedNewIds.length > 0) {
+      s.unlockedAchievements = [...s.unlockedAchievements, ...achRes.unlockedNewIds];
+      s.logs = [...achRes.logsToAdd, ...s.logs].slice(0, 100);
+      s.stats.morale = Math.min(100, s.stats.morale + 5 * achRes.unlockedNewIds.length);
+    }
   }
 
   // 6. CSGT checkpoint rotation & NPC news every hour / 30m
@@ -1080,6 +1103,45 @@ export function dispatch(state: GameState, action: Action): GameState {
       return addLog(s, `Đã đổi sang phương tiện: ${found.name}.`, 'info');
     }
 
+    // Milestone 6 Actions
+    case 'SET_DIFFICULTY': {
+      s.difficulty = action.difficulty;
+      const label = action.difficulty === 'easy' ? 'Dễ thở' : action.difficulty === 'hard' ? 'Khắc nghiệt' : 'Tiêu chuẩn';
+      return addLog(s, `Đã chuyển mức độ khó sang: ${label}.`, 'info');
+    }
+
+    case 'CHOOSE_TET_DECISION': {
+      s.choseTetHome = action.goHome;
+      if (action.goHome) {
+        s.economy = {
+          ...s.economy,
+          cash: Math.max(0, s.economy.cash - 800000),
+          todayExpenses: {
+            ...s.economy.todayExpenses,
+            other: s.economy.todayExpenses.other + 800000,
+          },
+        };
+        s.stats = {
+          ...s.stats,
+          health: 100,
+          morale: 100,
+          sleepDebt: 0,
+        };
+        s.app = { ...s.app, isOnline: false, activeTrip: null };
+        return addLog(s, '🧧 Bạn đã quyết định về quê ăn Tết cùng mẹ và gia đình! Vé xe Tết -800.000đ. Tinh thần & Sức khỏe hồi phục 100%!', 'event');
+      } else {
+        s.stats.morale = Math.max(10, s.stats.morale - 10);
+        return addLog(s, '🏍️ Bạn chọn ở lại Sài Gòn cày Tết! Giá cước sẽ tăng vọt nhưng nhớ gọi điện chúc Tết mẹ ở quê.', 'event');
+      }
+    }
+
+    case 'UNLOCK_ACHIEVEMENT': {
+      if (!s.unlockedAchievements.includes(action.achievementId)) {
+        s.unlockedAchievements = [...s.unlockedAchievements, action.achievementId];
+      }
+      return s;
+    }
+
     default:
       return s;
   }
@@ -1136,6 +1198,11 @@ export interface ViewModel {
   activeCsgtZones: string[];
   goal: GameState['goal'];
   loan: GameState['loan'];
+  difficulty: GameState['difficulty'];
+  unlockedAchievements: string[];
+  isTetSeason: boolean;
+  choseTetHome: boolean | null;
+  historySummaries: DailySummary[];
   weather: {
     type: string;
     label: string;
@@ -1212,6 +1279,11 @@ export function getView(state: GameState): ViewModel {
     activeCsgtZones: state.activeCsgtZones,
     goal: state.goal,
     loan: state.loan,
+    difficulty: state.difficulty,
+    unlockedAchievements: state.unlockedAchievements,
+    isTetSeason: state.isTetSeason,
+    choseTetHome: state.choseTetHome,
+    historySummaries: state.historySummaries,
     weather: {
       type: state.weather.type,
       label: weatherLabel,

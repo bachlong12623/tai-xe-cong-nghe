@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ViewModel } from '../../sim/engine';
 import { Action } from '../../sim/types';
+import { sound } from '../utils/sound';
 import { 
   Play, 
   Pause, 
@@ -13,7 +14,11 @@ import {
   CloudLightning,
   Power,
   Save,
-  RotateCcw
+  RotateCcw,
+  Volume2,
+  VolumeX,
+  Trophy,
+  BarChart3
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -21,16 +26,34 @@ interface TopBarProps {
   dispatch: (action: Action) => void;
   onSave?: () => void;
   onReset?: () => void;
+  onOpenAchievements?: () => void;
+  onOpenStatistics?: () => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset }) => {
+export const TopBar: React.FC<TopBarProps> = ({
+  view,
+  dispatch,
+  onSave,
+  onReset,
+  onOpenAchievements,
+  onOpenStatistics,
+}) => {
   const [saveToast, setSaveToast] = useState(false);
+  const [isMuted, setIsMuted] = useState(sound.isMuted);
 
   const handleManualSave = () => {
     if (onSave) {
       onSave();
       setSaveToast(true);
       setTimeout(() => setSaveToast(false), 2000);
+    }
+  };
+
+  const toggleSound = () => {
+    const muted = sound.toggleMute();
+    setIsMuted(muted);
+    if (!muted) {
+      sound.playOrderPing();
     }
   };
 
@@ -58,6 +81,13 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset 
           </span>
         </div>
 
+        {/* Festive Tet Badge */}
+        {view.isTetSeason && (
+          <span className="px-2 py-0.5 rounded bg-red-600 text-amber-200 text-[10px] font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
+            <span>🧧</span> TẾT NGUYÊN ĐÁN
+          </span>
+        )}
+
         <div className="h-5 w-px bg-neutral-700 hidden sm:block" />
 
         <div className="flex items-center gap-2 bg-neutral-950/70 border border-neutral-800 px-3 py-1 rounded-lg">
@@ -74,13 +104,13 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset 
         </div>
       </div>
 
-      {/* Finances & Speed Controller */}
-      <div className="flex items-center gap-3">
+      {/* Finances, Speed Controller, Tools */}
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Money */}
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-2 text-xs">
           <div className="flex items-center gap-1.5 bg-neutral-950/90 border border-emerald-900/60 px-2.5 py-1.5 rounded-lg">
             <Banknote className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-neutral-400 text-[11px]">Tiền mặt:</span>
+            <span className="text-neutral-400 text-[11px] hidden sm:inline">Tiền mặt:</span>
             <span className="font-bold text-emerald-300 font-mono">{view.cashFormatted}</span>
           </div>
 
@@ -91,6 +121,51 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset 
           </div>
         </div>
 
+        {/* Difficulty Selector */}
+        <select
+          value={view.difficulty}
+          onChange={(e) => dispatch({ t: 'SET_DIFFICULTY', difficulty: e.target.value as any })}
+          className="bg-neutral-950 border border-neutral-800 rounded-lg px-2 py-1 text-[11px] text-neutral-300 font-semibold focus:outline-none focus:border-emerald-500 hidden sm:block"
+        >
+          <option value="easy">Dễ thở</option>
+          <option value="normal">Tiêu chuẩn</option>
+          <option value="hard">Khắc nghiệt</option>
+        </select>
+
+        {/* Sound Mute Toggle */}
+        <button
+          onClick={toggleSound}
+          title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+          className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-emerald-400 transition-colors"
+        >
+          {isMuted ? <VolumeX className="w-4 h-4 text-neutral-500" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+        </button>
+
+        {/* Achievements Modal Trigger */}
+        {onOpenAchievements && (
+          <button
+            onClick={onOpenAchievements}
+            title="Thành tựu & Danh hiệu"
+            className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors flex items-center gap-1 text-xs"
+          >
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span className="hidden xl:inline text-[11px] font-bold text-neutral-300">
+              {view.unlockedAchievements.length}
+            </span>
+          </button>
+        )}
+
+        {/* Statistics Modal Trigger */}
+        {onOpenStatistics && (
+          <button
+            onClick={onOpenStatistics}
+            title="Báo cáo thống kê dài hạn"
+            className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-blue-400 transition-colors"
+          >
+            <BarChart3 className="w-4 h-4 text-blue-400" />
+          </button>
+        )}
+
         {/* Time Speed Controls */}
         <div className="flex items-center bg-neutral-950 border border-neutral-800 rounded-lg p-0.5">
           {speeds.map((s) => (
@@ -98,7 +173,7 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset 
               key={s}
               onClick={() => dispatch({ t: 'SET_SPEED', speed: s })}
               title={s === 0 ? 'Tạm dừng' : `Tua nhanh x${s}`}
-              className={`px-2 py-1 text-xs font-mono font-bold rounded flex items-center gap-0.5 transition-all ${
+              className={`px-1.5 sm:px-2 py-1 text-xs font-mono font-bold rounded flex items-center gap-0.5 transition-all ${
                 view.speed === s
                   ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
                   : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800'
@@ -128,7 +203,7 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset 
           }`}
         >
           <Power className={`w-3.5 h-3.5 ${view.isOnline ? 'animate-pulse text-white' : 'text-neutral-400'}`} />
-          <span>{view.isOnline ? 'ĐANG BẬT APP' : 'TẮT APP'}</span>
+          <span className="hidden sm:inline">{view.isOnline ? 'ĐANG BẬT APP' : 'TẮT APP'}</span>
         </button>
 
         {/* Save / Reset Tools */}
@@ -139,7 +214,7 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset 
             className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 hover:border-neutral-700 text-neutral-300 hover:text-emerald-400 transition-colors text-xs flex items-center gap-1"
           >
             <Save className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">Lưu</span>
+            <span className="hidden 2xl:inline">Lưu</span>
           </button>
 
           {onReset && (
@@ -166,4 +241,3 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset 
     </header>
   );
 };
-

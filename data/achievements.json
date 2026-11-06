@@ -1,0 +1,86 @@
+[
+  {
+    "id": "first_trip",
+    "title": "Chuyến xe đầu tiên",
+    "description": "Hoàn thành cuốc xe đầu tiên trong sự nghiệp tài xế công nghệ.",
+    "icon": "🛵",
+    "category": "career"
+  },
+  {
+    "id": "ten_trips_day",
+    "title": "Cần cù bù thông minh",
+    "description": "Hoàn thành từ 10 cuốc xe trở lên trong một ngày.",
+    "icon": "⚡",
+    "category": "performance"
+  },
+  {
+    "id": "rain_rider",
+    "title": "Chiến binh áo mưa",
+    "description": "Chạy cuốc xe dưới trời mưa to bão bùng để kiếm thêm phụ phí.",
+    "icon": "🌧️",
+    "category": "grit"
+  },
+  {
+    "id": "night_owl",
+    "title": "Cú đêm Sài Gòn",
+    "description": "Hoàn thành cuốc xe vào khung giờ khuya từ 00:00 đến 04:00 sáng.",
+    "icon": "🦉",
+    "category": "night"
+  },
+  {
+    "id": "big_tip",
+    "title": "Khách quý ấm lòng",
+    "description": "Nhận được tiền tip từ 30.000đ trở lên trong một chuyến đi.",
+    "icon": "💰",
+    "category": "service"
+  },
+  {
+    "id": "five_star_driver",
+    "title": "Bác tài 5 sao",
+    "description": "Duy trì đánh giá trung bình từ 4.95 sao trở lên qua ít nhất 20 cuốc.",
+    "icon": "⭐",
+    "category": "service"
+  },
+  {
+    "id": "own_bike",
+    "title": "Xe chính chủ",
+    "description": "Trả hết toàn bộ khoản nợ vay mua xe máy trả góp.",
+    "icon": "📜",
+    "category": "wealth"
+  },
+  {
+    "id": "green_revolution",
+    "title": "Kỷ nguyên Xanh",
+    "description": "Sở hữu và chạy cuốc bằng xe máy điện VinFast Evo 200.",
+    "icon": "🔋",
+    "category": "vehicle"
+  },
+  {
+    "id": "four_wheels",
+    "title": "Lên đời 4 bánh",
+    "description": "Mua và cầm lái ô tô taxi 4 chỗ Toyota Vios chạy GrabCar.",
+    "icon": "🚘",
+    "category": "vehicle"
+  },
+  {
+    "id": "millionaire",
+    "title": "Triệu phú đường phố",
+    "description": "Tích lũy được trên 10.000.000đ tiền mặt trong tay.",
+    "icon": "💎",
+    "category": "wealth"
+  },
+  {
+    "id": "healthy_sleep",
+    "title": "Sức khỏe là vàng",
+    "description": "Duy trì nợ ngủ bằng 0 sau trọn vẹn 3 ngày liên tiếp.",
+    "icon": "🛌",
+    "category": "health"
+  },
+  {
+    "id": "survive_7_days",
+    "title": "1 Tuần Trụ Vững",
+    "description": "Vượt qua trọn vẹn 7 ngày mưu sinh tại TP.HCM mà không bị gục ngã.",
+    "icon": "🏆",
+    "category": "career"
+  }
+]

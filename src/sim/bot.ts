@@ -63,16 +63,40 @@ function botDecideMinute(state: GameState, strategy: BotStrategy): GameState {
     return s;
   }
 
+  // Handle Tet Lunar New Year decision if prompted
+  if (s.isTetSeason && s.choseTetHome === null && s.time.day >= 27) {
+    // Balanced bot goes home if financially prosperous (> 2.5m cash); others stay
+    const goHome = strategy === 'balanced' && s.economy.cash >= 2500000;
+    s = dispatch(s, { t: 'CHOOSE_TET_DECISION', goHome });
+    return s;
+  }
+
   // Recharge phone if battery is low (< 20%) and not on trip/sleeping
   if (!s.isSleeping && !s.app.activeTrip && s.stats.phoneBattery < 25 && s.economy.cash >= 15000) {
     s = dispatch(s, { t: 'CHARGE_PHONE' });
     return s;
   }
 
-  // 2. Refuel if gas is low (< 1.2L) and not sleeping/on trip
+  // Refuel if gas is low (< 1.2L) and not sleeping/on trip
   if (!s.isSleeping && !s.app.activeTrip && s.vehicle.fuelCurrent < 1.2 && s.economy.cash >= 25000) {
     s = dispatch(s, { t: 'REFUEL' });
     return s;
+  }
+
+  // Vehicle maintenance for long-term survival
+  if (!s.isSleeping && !s.app.activeTrip) {
+    if (s.vehicle.condition.oil < 15 && s.economy.cash >= 150000) {
+      s = dispatch(s, { t: 'REPAIR_PART', part: 'oil' });
+      return s;
+    }
+    if (s.vehicle.condition.brakes < 15 && s.economy.cash >= 150000) {
+      s = dispatch(s, { t: 'REPAIR_PART', part: 'brakes' });
+      return s;
+    }
+    if (s.vehicle.condition.tires < 15 && s.economy.cash >= 300000) {
+      s = dispatch(s, { t: 'REPAIR_PART', part: 'tires' });
+      return s;
+    }
   }
 
   // 3. Handle incoming trip offer
