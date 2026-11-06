@@ -82,3 +82,36 @@ Tài liệu này lưu lại các quyết định kỹ thuật, giả định và
   - **Chế độ dẫn đường**:
     - Lựa chọn 3 tuyến đường: `fast` (Nhanh nhất), `light` (Né kẹt xe +15% km), `dry` (Né ngập triều cường +25% km).
   - **Kiểm thử**: Toàn bộ 36/36 unit tests pass 100%, build production thành công.
+
+## 008. Nghiệm thu Mốc 5 (Thế Giới: 12 Khu Vực, Kỹ Năng, CSGT, Xe Điện/Ô Tô, NPC & Mục Tiêu/Nợ)
+- **Ngày**: 06/11/2026
+- **Nội dung hoàn thành**:
+  - **Mạng lưới 12 Khu vực TP.HCM & Điểm chờ**:
+    - Bản đồ mở rộng đủ 12 khu vực: Quận 1, Quận 3, Bình Thạnh, Phú Nhuận, Tân Bình (Sân Bay), Gò Vấp, Quận 10 & 5 (Chợ Lớn), Quận 7 & 4, Thủ Đức / Thảo Điền, Bình Tân (KCN PouYuen), Quận 12 & Hóc Môn, Khu Phố Tây / Bar Đêm.
+    - Tất cả 12 khu vực đều có ít nhất một điểm chờ chiến lược với đặc thù mật độ cuốc (chở khách, giao đồ ăn hoặc cả hai).
+  - **5 Cây Kỹ năng tài xế (Cấp 0–5 & EXP đo được)**:
+    - *Thuộc đường*: Giảm thời gian di chuyển (-3%/cấp, tối đa -15% ở cấp 5).
+    - *Giao tiếp*: Tăng xác suất nhận tiền tip (+3%/cấp) và đánh giá 5 sao.
+    - *Giữ đồ*: Giảm tỷ lệ đổ vỡ, xô lệch hộp đồ ăn (-15%/cấp).
+    - *Lái an toàn*: Giảm nguy cơ tai nạn giao thông (-6%/cấp, tối đa -30% ở cấp 5).
+    - *Tự chủ*: Giảm hao hụt Tinh thần khi đối mặt kẹt xe, thời tiết xấu hoặc phàn nàn (-10%/cấp).
+    - Tích lũy EXP tự động qua hành trình và hoàn thành cuốc xe; bảng kỹ năng trực quan `SkillsModal`.
+  - **Lực lượng CSGT & Vi phạm giao thông ("Đi tắt")**:
+    - 4 phong cách chạy xe: `safe` (An toàn 100%), `normal` (Bình thường), `rush` (Gấp rút, vượt đèn vàng/đỏ), `shortcut` (Đi đường tắt, leo vỉa hè / đi ngược chiều).
+    - Cơ chế tuần tra: Các chốt CSGT xoay tua theo giờ cao điểm và khu vực trọng điểm.
+    - Nếu vi phạm gặp chốt CSGT: Lập biên bản xử phạt từ 400.000đ đến 1.000.000đ, trừ tiền, tụt tinh thần và hiển thị popup biên bản `PoliceFineModal`.
+  - **Cộng đồng NPC & Kênh đàm bác tài**:
+    - 12 NPC tài xế với chân dung, tính cách và độ tin cậy riêng (từ 65% đến 95%).
+    - Phát tin cảnh báo tức thời: Kẹt xe, điểm ngập triều cường, chốt CSGT, quán ăn quá tải làm chậm, điểm nóng nổ đơn; giao diện `CommunityModal`.
+  - **3 Loại Phương tiện chơi được (Xe máy xăng, Xe điện, Taxi ô tô)**:
+    - *Honda Wave Alpha*: Xe máy xăng giá rẻ, bền bỉ, tiêu hao 1.9L/100km.
+    - *VinFast Evo 200 (Xe điện)*: Cơ chế quản lý Pin (0-100%), tiêu hao ~1.25% pin/km; trạm đổi pin nhanh 15.000đ trong 3 phút khôi phục 100% pin; sạc điện chậm tại gia.
+    - *Toyota Vios 1.5E (Ô tô taxi 4 chỗ)*: Cước cơ bản cao (28.000đ mở cửa + 11.000đ/km), cấm nhận đơn đồ ăn ngõ hẻm; tiêu hao 6.5L/100km; phí bãi sân bay Tân Sơn Nhất.
+    - Giao diện Gara & Showroom (`VehicleShopModal`) hỗ trợ mua đứt tiền mặt hoặc mua trả góp.
+  - **Mục tiêu cuộc đời & Quản lý nợ vay**:
+    - 4 mục tiêu cuộc đời: Trả nợ xe Wave (15 triệu), Gửi tiền về quê cho mẹ (5 triệu), Học phí cho con (8 triệu), Vốn mở quán ăn (30 triệu).
+    - Cơ chế trả góp xe định kỳ 50.000đ/ngày vào 05:00 sáng.
+    - Hỗ trợ ứng tiền mặt khẩn cấp (Vay nóng) khi gặp sự cố, tai nạn hoặc hết tiền.
+  - **Kiểm thử & Chất lượng**:
+    - 49/49 unit & bot test cases pass 100%.
+    - Production build Vite hoàn tất trong 4.59s không có lỗi TypeScript hay cảnh báo.

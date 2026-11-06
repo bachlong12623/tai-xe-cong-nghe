@@ -48,11 +48,14 @@ export interface VehicleCondition {
 export interface VehicleState {
   id: string;
   name: string;
+  category: 'motorcycle' | 'motorcycle_electric' | 'car';
   fuelType: 'gas' | 'electric';
-  fuelCurrent: number;     // liters or kWh
-  fuelCapacity: number;
+  fuelCurrent: number;     // liters or battery percent (0 - 100)
+  fuelCapacity: number;    // liters or 100
   odometerKm: number;
   condition: VehicleCondition;
+  canDeliverFood: boolean;
+  canRidePassenger: boolean;
 }
 
 export interface DailyExpenses {
@@ -184,6 +187,54 @@ export interface AccidentEvent {
   moralePenalty: number;
 }
 
+// Milestone 5 additions
+export type DrivingStyle = 'safe' | 'normal' | 'rush' | 'shortcut';
+
+export interface PoliceFineEvent {
+  reason: string;
+  fineAmount: number;
+  zoneName: string;
+}
+
+export interface SkillState {
+  level: number;
+  exp: number;
+}
+
+export interface DriverSkills {
+  streetKnowledge: SkillState;   // Thuộc đường
+  communication: SkillState;     // Giao tiếp
+  itemHandling: SkillState;      // Giữ đồ
+  defensiveDriving: SkillState;  // Lái an toàn
+  stressResilience: SkillState;  // Tự chủ
+}
+
+export interface NpcMessage {
+  id: string;
+  npcId: string;
+  npcName: string;
+  avatar: string;
+  zoneId?: string;
+  content: string;
+  timestampFormatted: string;
+  reliability: number;
+  type: 'traffic' | 'police' | 'flood' | 'demand' | 'merchant' | 'chatter';
+}
+
+export interface CharacterGoal {
+  id: string;
+  title: string;
+  targetAmount: number;
+  currentAmount: number;
+  achieved: boolean;
+}
+
+export interface LoanState {
+  totalPrincipal: number;
+  dailyInterestRate: number;
+  daysOverdue: number;
+}
+
 export interface GameState {
   schemaVersion: number;
   seed: number;
@@ -192,6 +243,7 @@ export interface GameState {
   time: GameTime;
   stats: CharacterStats;
   vehicle: VehicleState;
+  ownedVehicles: VehicleState[];
   economy: EconomyState;
   app: DriverApp;
   location: LocationState;
@@ -209,6 +261,15 @@ export interface GameState {
   showDailySummaryModal: boolean;
   pendingSummary: DailySummary | null;
   recentEventCooldowns: Record<string, number>; // eventId -> availableAtMinute
+
+  // Milestone 5 additions
+  drivingStyle: DrivingStyle;
+  skills: DriverSkills;
+  npcMessages: NpcMessage[];
+  activeCsgtZones: string[];
+  activePoliceFine: PoliceFineEvent | null;
+  goal: CharacterGoal;
+  loan: LoanState;
 }
 
 export type Action =
@@ -233,5 +294,15 @@ export type Action =
   | { t: 'DISMISS_ACCIDENT' }
   | { t: 'REPAIR_PART'; part: 'tires' | 'oil' | 'brakes' | 'chain' | 'sparkPlug' }
   | { t: 'CHARGE_PHONE' }
-  | { t: 'CHOOSE_EVENT'; eventId: string; optionIndex: number };
-
+  | { t: 'CHOOSE_EVENT'; eventId: string; optionIndex: number }
+  // Milestone 5 Actions
+  | { t: 'SET_DRIVING_STYLE'; style: DrivingStyle }
+  | { t: 'DISMISS_POLICE_FINE' }
+  | { t: 'SET_GOAL'; goalId: string }
+  | { t: 'CONTRIBUTE_GOAL'; amount: number }
+  | { t: 'TAKE_EMERGENCY_LOAN'; amount: number }
+  | { t: 'REPAY_LOAN'; amount: number }
+  | { t: 'BUY_VEHICLE'; vehicleId: string; paymentMode: 'cash' | 'installment' }
+  | { t: 'SWITCH_VEHICLE'; vehicleId: string }
+  | { t: 'SWAP_BATTERY' }
+  | { t: 'CHARGE_VEHICLE'; durationMinutes?: number };

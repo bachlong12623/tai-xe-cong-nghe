@@ -1,0 +1,60 @@
+{
+  "availableGoals": [
+    {
+      "id": "pay_bike_loan",
+      "title": "Trả hết nợ mua xe Wave",
+      "description": "Khoản nợ mua trả góp chiếc xe máy cày cuốc ban đầu. Cần trả dứt điểm để nhẹ gánh lo âu.",
+      "targetAmount": 15000000,
+      "moraleBonusOnComplete": 25,
+      "badge": "Xe Chính Chủ"
+    },
+    {
+      "id": "send_family",
+      "title": "Gửi tiền về quê cho mẹ",
+      "description": "Mẹ ở quê tuổi cao sức yếu, mỗi tháng ráng dành dụm gửi về 5 triệu lo thuốc men và sinh hoạt.",
+      "targetAmount": 5000000,
+      "moraleBonusOnComplete": 20,
+      "badge": "Người Con Hiếu Thảo"
+    },
+    {
+      "id": "child_tuition",
+      "title": "Đóng học phí đầu năm cho con",
+      "description": "Tiền học, sách vở và đồng phục của con gái đầu năm học mới. Không để con phải thiếu thốn.",
+      "targetAmount": 8000000,
+      "moraleBonusOnComplete": 22,
+      "badge": "Trụ Cột Gia Đình"
+    },
+    {
+      "id": "open_shop",
+      "title": "Tích lũy vốn mở quán ăn nhỏ",
+      "description": "Chạy xe dầm mưa dãi nắng không thể làm cả đời. Tích lũy 30 triệu để thuê mặt bằng bán bánh mì / cà phê.",
+      "targetAmount": 30000000,
+      "moraleBonusOnComplete": 30,
+      "badge": "Khởi Nghiệp Tự Do"
+    }
+  ],
+  "loanRules": {
+    "emergencyLoanOptions": [
+      {
+        "amount": 1000000,
+        "label": "Ứng nhanh 1.000.000đ (sửa xe gấp)",
+        "dailyInterestRate": 0.015
+      },
+      {
+        "amount": 3000000,
+        "label": "Vay nóng 3.000.000đ (viện phí / cứu hộ)",
+        "dailyInterestRate": 0.015
+      },
+      {
+        "amount": 5000000,
+        "label": "Vay tín chấp 5.000.000đ",
+        "dailyInterestRate": 0.012
+      }
+    ],
+    "defaultBikeInstallment": {
+      "initialDebt": 15000000,
+      "minimumDailyPayment": 50000,
+      "penaltyIfMissed": 10000
+    }
+  }
+}

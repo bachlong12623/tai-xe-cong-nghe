@@ -9,6 +9,11 @@ import { EatModal, DrinkModal, SleepModal } from './components/ActionModals';
 import { DailySummaryModal } from './components/DailySummaryModal';
 import { EventModal } from './components/EventModal';
 import { MaintenanceModal } from './components/MaintenanceModal';
+import { SkillsModal } from './components/SkillsModal';
+import { CommunityModal } from './components/CommunityModal';
+import { GoalsModal } from './components/GoalsModal';
+import { VehicleShopModal } from './components/VehicleShopModal';
+import { PoliceFineModal } from './components/PoliceFineModal';
 import { User, Map, Smartphone, Terminal } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -19,6 +24,10 @@ export const App: React.FC = () => {
   const [isDrinkModalOpen, setIsDrinkModalOpen] = useState(false);
   const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+  const [isSkillsModalOpen, setIsSkillsModalOpen] = useState(false);
+  const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
+  const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
+  const [isVehicleShopModalOpen, setIsVehicleShopModalOpen] = useState(false);
 
   // Mobile active tab
   const [mobileTab, setMobileTab] = useState<'char' | 'map' | 'app' | 'logs'>('char');
@@ -77,7 +86,7 @@ export const App: React.FC = () => {
 
         {/* Desktop 3-Column Layout & Mobile View Toggle */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 items-start">
-          {/* Left Column: Character Stats & Vehicle */}
+          {/* Left Column: Character Stats, Skills, Goals, Vehicles */}
           <div className={`lg:col-span-3 ${mobileTab === 'char' ? 'block' : 'hidden lg:block'}`}>
             <CharacterPanel
               view={view}
@@ -86,6 +95,10 @@ export const App: React.FC = () => {
               onOpenDrinkModal={() => setIsDrinkModalOpen(true)}
               onOpenSleepModal={() => setIsSleepModalOpen(true)}
               onOpenMaintenanceModal={() => setIsMaintenanceModalOpen(true)}
+              onOpenSkillsModal={() => setIsSkillsModalOpen(true)}
+              onOpenCommunityModal={() => setIsCommunityModalOpen(true)}
+              onOpenGoalsModal={() => setIsGoalsModalOpen(true)}
+              onOpenVehicleShopModal={() => setIsVehicleShopModalOpen(true)}
             />
           </div>
 
@@ -111,7 +124,7 @@ export const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Interactive Modals */}
+      {/* Interactive Action Modals */}
       <EatModal
         isOpen={isEatModalOpen}
         onClose={() => setIsEatModalOpen(false)}
@@ -129,7 +142,6 @@ export const App: React.FC = () => {
         onClose={() => setIsSleepModalOpen(false)}
         dispatch={dispatch}
       />
-      {/* Maintenance Modal */}
       <MaintenanceModal
         isOpen={isMaintenanceModalOpen}
         vehicle={state.vehicle}
@@ -137,6 +149,54 @@ export const App: React.FC = () => {
         onClose={() => setIsMaintenanceModalOpen(false)}
         dispatch={dispatch}
       />
+
+      {/* Milestone 5 Modals */}
+      {isSkillsModalOpen && (
+        <SkillsModal
+          skills={view.skills}
+          onClose={() => setIsSkillsModalOpen(false)}
+        />
+      )}
+
+      {isCommunityModalOpen && (
+        <CommunityModal
+          messages={view.npcMessages}
+          activeCsgtZones={view.activeCsgtZones}
+          onClose={() => setIsCommunityModalOpen(false)}
+        />
+      )}
+
+      {isGoalsModalOpen && (
+        <GoalsModal
+          goal={view.goal}
+          loan={view.loan}
+          economy={state.economy}
+          onSetGoal={(goalId) => dispatch({ t: 'SET_GOAL', goalId })}
+          onContributeGoal={(amount) => dispatch({ t: 'CONTRIBUTE_GOAL', amount })}
+          onTakeEmergencyLoan={(amount) => dispatch({ t: 'TAKE_EMERGENCY_LOAN', amount })}
+          onRepayLoan={(amount) => dispatch({ t: 'REPAY_LOAN', amount })}
+          onClose={() => setIsGoalsModalOpen(false)}
+        />
+      )}
+
+      {isVehicleShopModalOpen && (
+        <VehicleShopModal
+          currentVehicle={state.vehicle}
+          ownedVehicles={view.ownedVehicles}
+          economy={state.economy}
+          onBuyVehicle={(vehicleId, paymentMode) => dispatch({ t: 'BUY_VEHICLE', vehicleId, paymentMode })}
+          onSwitchVehicle={(vehicleId) => dispatch({ t: 'SWITCH_VEHICLE', vehicleId })}
+          onClose={() => setIsVehicleShopModalOpen(false)}
+        />
+      )}
+
+      {/* Police Fine Modal */}
+      {view.activePoliceFine && (
+        <PoliceFineModal
+          fine={view.activePoliceFine}
+          onDismiss={() => dispatch({ t: 'DISMISS_POLICE_FINE' })}
+        />
+      )}
 
       {/* Street Events & Accidents Modal */}
       <EventModal
@@ -155,4 +215,3 @@ export const App: React.FC = () => {
   );
 };
 export default App;
-

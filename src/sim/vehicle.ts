@@ -2,15 +2,19 @@ import { VehicleState } from './types';
 import vehiclesData from '../../data/vehicles.json';
 import pricingData from '../../data/pricing.json';
 
-export function createInitialVehicle(): VehicleState {
-  const defaultModel = vehiclesData.find((v) => v.id === 'wave_alpha') || vehiclesData[0];
+export function createVehicle(vehicleId: string): VehicleState {
+  const model = vehiclesData.find((v) => v.id === vehicleId) || vehiclesData[0];
+  const isElectric = model.fuelType === 'electric';
+  const isCar = model.category === 'car';
+
   return {
-    id: defaultModel.id,
-    name: defaultModel.name,
-    fuelType: 'gas',
-    fuelCurrent: 3.0, // ~80% full
-    fuelCapacity: defaultModel.fuelCapacityLiters || 3.7,
-    odometerKm: 14200,
+    id: model.id,
+    name: model.name,
+    category: isCar ? 'car' : isElectric ? 'motorcycle_electric' : 'motorcycle',
+    fuelType: isElectric ? 'electric' : 'gas',
+    fuelCurrent: isElectric ? 90 : 3.0, // 90% or 3.0L
+    fuelCapacity: isElectric ? 100 : (model.fuelCapacityLiters || 3.7),
+    odometerKm: isCar ? 45000 : 14200,
     condition: {
       tires: 85,
       oil: 75,
@@ -18,7 +22,13 @@ export function createInitialVehicle(): VehicleState {
       chain: 80,
       sparkPlug: 85,
     },
+    canDeliverFood: model.canDeliverFood ?? true,
+    canRidePassenger: model.canRidePassenger ?? true,
   };
+}
+
+export function createInitialVehicle(): VehicleState {
+  return createVehicle('wave_alpha');
 }
 
 export function refuelVehicle(
@@ -26,6 +36,10 @@ export function refuelVehicle(
   cashAvailable: number,
   litersRequested?: number
 ): { vehicle: VehicleState; cost: number; litersAdded: number; error?: string } {
+  if (vehicle.fuelType === 'electric') {
+    return { vehicle, cost: 0, litersAdded: 0, error: 'Xe điện không dùng xăng! Hãy chọn Đổi pin hoặc Sạc điện.' };
+  }
+
   const maxCanAdd = vehicle.fuelCapacity - vehicle.fuelCurrent;
   if (maxCanAdd <= 0.1) {
     return { vehicle, cost: 0, litersAdded: 0, error: 'Bình xăng đã gần đầy!' };
@@ -61,6 +75,45 @@ export function refuelVehicle(
   };
 }
 
+export function swapBattery(
+  vehicle: VehicleState,
+  cashAvailable: number
+): { vehicle: VehicleState; cost: number; error?: string } {
+  if (vehicle.fuelType !== 'electric') {
+    return { vehicle, cost: 0, error: 'Chỉ xe máy điện mới có thể đổi pin!' };
+  }
+
+  const swapCost = 15000;
+  if (cashAvailable < swapCost) {
+    return { vehicle, cost: 0, error: `Không đủ tiền đổi pin (cần ${swapCost.toLocaleString('vi-VN')}đ)!` };
+  }
+
+  if (vehicle.fuelCurrent >= 95) {
+    return { vehicle, cost: 0, error: 'Pin xe vẫn còn đầy (trên 95%), chưa cần đổi!' };
+  }
+
+  return {
+    vehicle: {
+      ...vehicle,
+      fuelCurrent: 100,
+    },
+    cost: swapCost,
+  };
+}
+
+export function chargeBattery(
+  vehicle: VehicleState,
+  minutes: number
+): VehicleState {
+  if (vehicle.fuelType !== 'electric') return vehicle;
+  // ~25% per 60 minutes
+  const chargePercent = (minutes / 60) * 25;
+  return {
+    ...vehicle,
+    fuelCurrent: Math.min(100, vehicle.fuelCurrent + chargePercent),
+  };
+}
+
 /**
  * Degrade 5 vehicle parts by km traveled.
  */
@@ -71,13 +124,14 @@ export function degradeVehicleParts(vehicle: VehicleState, kmDriven: number): Ve
 
   // Tires: ~8000 km lifespan
   cond.tires = Math.max(0, cond.tires - (kmDriven / 8000) * 100);
-  // Oil: ~1500 km lifespan
-  cond.oil = Math.max(0, cond.oil - (kmDriven / 1500) * 100);
+  // Oil: ~1500 km lifespan (for electric, motor cooling oil lasts longer: ~5000km)
+  const oilLifespan = vehicle.fuelType === 'electric' ? 5000 : 1500;
+  cond.oil = Math.max(0, cond.oil - (kmDriven / oilLifespan) * 100);
   // Brakes: ~10000 km lifespan
   cond.brakes = Math.max(0, cond.brakes - (kmDriven / 10000) * 100);
   // Chain: ~15000 km lifespan
   cond.chain = Math.max(0, cond.chain - (kmDriven / 15000) * 100);
-  // Spark plug: ~8000 km lifespan
+  // Spark plug: ~8000 km lifespan (electric motor does not wear spark plugs as quickly, or inverter circuit)
   cond.sparkPlug = Math.max(0, cond.sparkPlug - (kmDriven / 8000) * 100);
 
   return {

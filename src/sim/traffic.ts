@@ -92,12 +92,13 @@ export function rollForAccident(
   vehicleCond: VehicleCondition,
   weather: WeatherState,
   time: GameTime,
-  rng: RngState
+  rng: RngState,
+  riskMultiplier = 1.0
 ): AccidentEvent | null {
   const isRain = weather.type === 'light_rain' || weather.type === 'heavy_rain' || weather.type === 'storm';
   const isNight = time.hour >= 23 || time.hour < 5;
 
-  const hourlyP = calculateAccidentHourlyProbability(alertness, vehicleCond, isRain, isNight);
+  const hourlyP = calculateAccidentHourlyProbability(alertness, vehicleCond, isRain, isNight) * riskMultiplier;
   const minuteP = hourlyP / 60;
 
   if (nextFloat(rng) > minuteP) {

@@ -162,7 +162,8 @@ export function calculateOrderFare(
   isPeakHour: boolean,
   isRain: boolean,
   surge: number,
-  tier: DriverApp['tier']
+  tier: DriverApp['tier'],
+  vehicleCategory: 'motorcycle' | 'motorcycle_electric' | 'car' = 'motorcycle'
 ): { grossFare: number; netFare: number; commission: number; rainBonus: number } {
   let gross = 0;
   let rainBonus = 0;
@@ -182,13 +183,17 @@ export function calculateOrderFare(
     }
     gross *= surge;
   } else {
-    const config = pricingData.passengerRide.motorcycle;
+    const isCar = vehicleCategory === 'car';
+    const config = isCar
+      ? pricingData.passengerRide.car4Seats
+      : pricingData.passengerRide.motorcycle;
+
     gross = config.baseFee;
     if (distanceKm > config.baseDistanceKm) {
       gross += (distanceKm - config.baseDistanceKm) * config.perKmAfterBase;
     }
     if (isRain) {
-      rainBonus = 5000;
+      rainBonus = isCar ? 10000 : 5000;
       gross += rainBonus;
     }
     gross *= surge;
@@ -268,7 +273,8 @@ export function generateOrderOffer(
   time: GameTime,
   weather: WeatherState,
   app: DriverApp,
-  currentZoneId: string
+  currentZoneId: string,
+  vehicleCategory: 'motorcycle' | 'motorcycle_electric' | 'car' = 'motorcycle'
 ): TripOrder {
   const isLateNight = time.hour >= 22 || time.hour < 5;
   const isBarZone = currentZoneId === 'khu_bar_dem';
@@ -276,7 +282,12 @@ export function generateOrderOffer(
   // Determine order type: food peaks at 11:30 - 13:00 and 18:00 - 20:00
   const isMealHour = (time.hour >= 11 && time.hour <= 13) || (time.hour >= 18 && time.hour <= 20);
   const foodRoll = nextFloat(rng);
-  const type: OrderType = (isMealHour && foodRoll < 0.70) || (!isMealHour && foodRoll < 0.40) ? 'food' : 'ride';
+  
+  // Cars cannot do food delivery in narrow alleys
+  let type: OrderType = 'ride';
+  if (vehicleCategory !== 'car') {
+    type = (isMealHour && foodRoll < 0.70) || (!isMealHour && foodRoll < 0.40) ? 'food' : 'ride';
+  }
 
   // Choose pickup and dropoff zones
   const pickupZoneId = currentZoneId;
@@ -309,7 +320,7 @@ export function generateOrderOffer(
   const isPeak = isMealHour || (time.hour >= 7 && time.hour <= 9) || (time.hour >= 17 && time.hour <= 19);
   const isRain = weather.type === 'light_rain' || weather.type === 'heavy_rain' || weather.type === 'storm';
 
-  const fareRes = calculateOrderFare(type, tripDistanceKm, isPeak, isRain, surge, app.tier);
+  const fareRes = calculateOrderFare(type, tripDistanceKm, isPeak, isRain, surge, app.tier, vehicleCategory);
 
   const customerName = choose(rng, VIETNAMESE_NAMES);
   const profile = getRandomCustomerProfile(rng, isBarZone, isLateNight);
@@ -332,6 +343,8 @@ export function generateOrderOffer(
   const id = `order_${Date.now()}_${nextInt(rng, 100, 999)}`;
   const title = type === 'food'
     ? `Giao đồ ăn: ${foodItems}`
+    : vehicleCategory === 'car'
+    ? `Chở khách (Car 4 chỗ): Đi ${dropoffName}`
     : `Chở khách: Đi ${dropoffName}`;
 
   return {
@@ -361,4 +374,3 @@ export function generateOrderOffer(
     countdownSeconds: 12,
   };
 }
-

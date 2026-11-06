@@ -1,0 +1,56 @@
+{
+  "skills": [
+    {
+      "id": "streetKnowledge",
+      "name": "Thuộc đường",
+      "description": "Nắm rõ từng con hẻm, đường tắt Sài Gòn. Giúp giảm thời gian di chuyển và tránh lạc đường.",
+      "maxLevel": 5,
+      "xpThresholds": [0, 100, 250, 500, 1000, 2000],
+      "effectPerLevel": {
+        "travelTimeReductionPercent": 3.0,
+        "wrongWayChanceReduction": 0.20
+      }
+    },
+    {
+      "id": "communication",
+      "name": "Giao tiếp",
+      "description": "Ăn nói nhỏ nhẹ, hiểu ý khách, xử lý tình huống khéo léo. Tăng tỷ lệ khách tip và giảm khiếu nại.",
+      "maxLevel": 5,
+      "xpThresholds": [0, 100, 250, 500, 1000, 2000],
+      "effectPerLevel": {
+        "tipChanceBonusPercent": 3.0,
+        "fiveStarChanceBonusPercent": 4.0
+      }
+    },
+    {
+      "id": "itemHandling",
+      "name": "Giữ đồ",
+      "description": "Cẩn thận khi nhận và chằng buộc hộp đồ ăn, ly nước. Giảm tối đa xác suất canh đổ, thức ăn bị xô lệch.",
+      "maxLevel": 5,
+      "xpThresholds": [0, 100, 250, 500, 1000, 2000],
+      "effectPerLevel": {
+        "foodDamageReductionPercent": 15.0
+      }
+    },
+    {
+      "id": "defensiveDriving",
+      "name": "Lái an toàn",
+      "description": "Quan sát gương hậu, giữ khoảng cách phanh, phán đoán điểm mù xe tải. Giảm xác suất va chạm và tai nạn.",
+      "maxLevel": 5,
+      "xpThresholds": [0, 100, 250, 500, 1000, 2000],
+      "effectPerLevel": {
+        "accidentRiskReductionPercent": 6.0
+      }
+    },
+    {
+      "id": "stressResilience",
+      "name": "Tự chủ",
+      "description": "Tâm lý vững vàng trước khách khó tính, kẹt xe giờ cao điểm hay trời mưa gió bão bùng. Giảm hao hụt Tinh thần.",
+      "maxLevel": 5,
+      "xpThresholds": [0, 100, 250, 500, 1000, 2000],
+      "effectPerLevel": {
+        "moraleLossReductionPercent": 10.0
+      }
+    }
+  ]
+}

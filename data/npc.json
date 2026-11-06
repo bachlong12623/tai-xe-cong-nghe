@@ -1,0 +1,132 @@
+{
+  "npcs": [
+    {
+      "id": "bac_nam",
+      "name": "Bác Năm Sài Gòn",
+      "alias": "Tài già 12 năm",
+      "avatar": "👨‍🦳",
+      "reliability": 0.92,
+      "personality": "Kinh nghiệm dày dạn, hay nhắc anh em chạy cẩn thận, tin tức cực kỳ chuẩn xác"
+    },
+    {
+      "id": "tuan_speed",
+      "name": "Tuấn Tia Chớp",
+      "alias": "Chuyên gia lách hẻm",
+      "avatar": "⚡",
+      "reliability": 0.78,
+      "personality": "Chạy nhanh, thích vượt đèn, mách đường tắt nhưng đôi khi dẫn vào hẻm cụt"
+    },
+    {
+      "id": "lan_food",
+      "name": "Chị Lan Phan Xích Long",
+      "alias": "Nữ hoàng đồ ăn",
+      "avatar": "👩‍🦰",
+      "reliability": 0.88,
+      "personality": "Rành hết các quán trà sữa, bánh tráng, biết rõ quán nào làm lâu quán nào nhanh"
+    },
+    {
+      "id": "hung_be",
+      "name": "Hùng Sân Bay",
+      "alias": "Cò Tân Bình",
+      "avatar": "🧔",
+      "reliability": 0.85,
+      "personality": "Nằm vùng sân bay và ga Sài Gòn, chuyên săn cuốc dài đi tỉnh hoặc ngoại thành"
+    },
+    {
+      "id": "cuong_night",
+      "name": "Cường Cày Đêm",
+      "alias": "Cú đêm Bùi Viện",
+      "avatar": "🕶️",
+      "reliability": 0.82,
+      "personality": "Chuyên chạy ca đêm 22h - 5h sáng, rành các quán bar và điểm nóng ăn chơi"
+    },
+    {
+      "id": "bac_ba_tho_xe",
+      "name": "Bác Ba Sửa Xe",
+      "alias": "Thần y xe máy Q10",
+      "avatar": "🔧",
+      "reliability": 0.95,
+      "personality": "Thợ máy kiêm tài xế, nhắc nhở anh em bảo dưỡng nhớt, lốp xe và bugi khi ngập"
+    },
+    {
+      "id": "minh_newbie",
+      "name": "Minh Tân Binh",
+      "alias": "Mới vào nghề",
+      "avatar": "👦",
+      "reliability": 0.65,
+      "personality": "Hay hốt hoảng, nghe tin đồn thất thiệt rồi share lung tung nhưng nhiệt tình"
+    },
+    {
+      "id": "dung_car",
+      "name": "Dũng GrabCar",
+      "alias": "Bác tài 4 bánh",
+      "avatar": "🚘",
+      "reliability": 0.86,
+      "personality": "Chạy ô tô Vios, rành các tuyến cấm dừng đỗ và điểm ngập sâu xe ô tô chết máy"
+    },
+    {
+      "id": "hoa_grab",
+      "name": "Cô Hoa Bình Thạnh",
+      "alias": "Hàng Xanh kỳ cựu",
+      "avatar": "👵",
+      "reliability": 0.89,
+      "personality": "Sống ngay ngã tư Hàng Xanh, nắm rõ triều cường ngập và chốt giao thông"
+    },
+    {
+      "id": "thanh_dien",
+      "name": "Thành Xe Điện",
+      "alias": "Chiến binh Pin Xanh",
+      "avatar": "🔋",
+      "reliability": 0.87,
+      "personality": "Chạy xe điện VinFast, rành các trạm đổi pin nhanh và chi phí siêu tiết kiệm"
+    },
+    {
+      "id": "quoc_pouyuen",
+      "name": "Quốc Bình Tân",
+      "alias": "Chiến thần KCN",
+      "avatar": "👷",
+      "reliability": 0.84,
+      "personality": "Đón sóng tan ca PouYuen và Tân Tạo, rành từng cổng sổ và giờ công nhân ùa ra"
+    },
+    {
+      "id": "phong_thu_duc",
+      "name": "Phong Làng Đại Học",
+      "alias": "Sinh viên làm thêm",
+      "avatar": "🎓",
+      "reliability": 0.75,
+      "personality": "Sinh viên chạy kiếm tiền học phí, năng nổ, thạo khu Thủ Đức và Thảo Điền"
+    }
+  ],
+  "templates": {
+    "traffic": [
+      "Đường {zone} đang kẹt cứng ngắc nha anh em, xe nhích từng mét!",
+      "Anh em né gấp khúc {zone}, có xe buýt va chạm chiếm hết 2 làn đường.",
+      "Giờ tan tầm {zone} kẹt từ cầu vượt đến ngã tư, ai nhận cuốc nhớ báo khách trễ 10 phút."
+    ],
+    "police": [
+      "CSGT đang bắn tốc độ và chốt rẽ phải ở {zone} nha mọi người, đi cẩn thận giấy tờ!",
+      "Có chốt giao thông kiểm tra cồn và đèn đỏ ở {zone}, anh em đừng dại vượt đèn!",
+      "Anh em chạy qua {zone} nhớ xi-nhan đàng hoàng, bồ câu đang đứng góc khuất."
+    ],
+    "flood": [
+      "Trời mưa to đường {zone} ngập lút nửa bánh xe rồi, xe số đi số 1-2 coi chừng chết máy!",
+      "Triều cường lên cao ở {zone}, anh em né tuyến ven sông kẻo dắt bộ bugi ướt nha.",
+      "Nước ngập sâu tại {zone}, xe ga tuyệt đối đừng lao vào kẻo thủy kích tốn mấy triệu tiền sửa!"
+    ],
+    "merchant": [
+      "Quán ăn ở {zone} đơn nổ liên tục nhưng bếp quá tải, chờ món phải 25-30 phút mới có!",
+      "Quán trà sữa lớn ở {zone} shipper đứng tràn ra vỉa hè, ai muốn nhanh thì cân nhắc hủy.",
+      "Khu ẩm thực {zone} đang ra món cực nhanh, ai đang đói ghé ăn cơm bình dân 35k ngon lắm."
+    ],
+    "demand": [
+      "Khu vực {zone} đang nổ cuốc liên tục, anh em bật app lên húp lẹ!",
+      "Mưa gió khách đặt xe ở {zone} giá surge tăng cao chót vót, tranh thủ kiếm cơm!",
+      "Văn phòng ở {zone} chuẩn bị tan ca, đứng chờ ngã tư bảo đảm 5 phút có cuốc."
+    ],
+    "chatter": [
+      "Trưa nắng gắt quá anh em nhớ uống nhiều nước, đừng cố quá kẻo say nắng xỉu ngang.",
+      "Hôm nay chạy được mấy cuốc rồi cả nhà ơi? Chúc anh em vạn dặm bình an!",
+      "Khách tip cho 50k ấm lòng quá, đời tài xế cực mà gặp khách dễ thương cũng thấy vui."
+    ]
+  }
+}

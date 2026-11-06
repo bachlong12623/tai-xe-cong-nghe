@@ -6,10 +6,17 @@ import {
   updateStatsPerMinute,
   applyEatFood,
   applyDrinkCoffee,
-  applyPowerNap,
   processDailySleepDebt,
 } from './stats';
-import { createInitialVehicle, refuelVehicle, degradeVehicleParts, repairVehiclePart } from './vehicle';
+import {
+  createInitialVehicle,
+  createVehicle,
+  refuelVehicle,
+  swapBattery,
+  chargeBattery,
+  degradeVehicleParts,
+  repairVehiclePart,
+} from './vehicle';
 import { createInitialEconomy, generateDailySummary } from './economy';
 import { createInitialDriverApp, evaluateDriverTier, checkAccountStatus } from './platform';
 import { createInitialWeather, updateWeather } from './weather';
@@ -28,9 +35,23 @@ import {
   evaluateRandomEventTrigger,
   applyEventOption,
 } from './events';
+import {
+  createDefaultSkills,
+  addSkillExp,
+  getTravelTimeMultiplier,
+  getTipChanceBonus,
+  getAccidentRiskMultiplier,
+  getFoodDamageReduction,
+  getMoraleLossReduction,
+} from './skills';
+import { getActiveCsgtZones, maybeGenerateNpcMessage } from './npc';
+import { checkPoliceViolation } from './violations';
+import { createDefaultGoal, createDefaultLoan, contributeGoal } from './goals';
 import itemsData from '../../data/items.json';
 import spotsData from '../../data/spots.json';
 import zonesData from '../../data/zones.json';
+import goalsData from '../../data/goals.json';
+import vehiclesData from '../../data/vehicles.json';
 
 export function createGame(seed: number = Date.now()): GameState {
   const rng = createRng(seed);
@@ -40,6 +61,9 @@ export function createGame(seed: number = Date.now()): GameState {
   const economy = createInitialEconomy();
   const app = createInitialDriverApp();
   const weather = createInitialWeather();
+  const skills = createDefaultSkills();
+  const goal = createDefaultGoal();
+  const loan = createDefaultLoan();
 
   const initialLog: LogMessage = {
     id: 'log_0',
@@ -57,6 +81,7 @@ export function createGame(seed: number = Date.now()): GameState {
     time,
     stats,
     vehicle,
+    ownedVehicles: [vehicle],
     economy,
     app,
     location: {
@@ -79,6 +104,14 @@ export function createGame(seed: number = Date.now()): GameState {
     showDailySummaryModal: false,
     pendingSummary: null,
     recentEventCooldowns: {},
+    // Milestone 5
+    drivingStyle: 'normal',
+    skills,
+    npcMessages: [],
+    activeCsgtZones: ['q1', 'tan_binh'],
+    activePoliceFine: null,
+    goal,
+    loan,
   };
 }
 
@@ -100,7 +133,7 @@ export function addLog(
 }
 
 /**
- * Advance an active trip by 1 minute with wear, fuel, and accident checks.
+ * Advance an active trip by 1 minute with wear, fuel, CSGT violation, and accident checks.
  */
 function advanceActiveTrip(state: GameState): GameState {
   let s = { ...state };
@@ -115,14 +148,31 @@ function advanceActiveTrip(state: GameState): GameState {
 
     const minutesDiv = Math.max(1, trip.stageMinutesRemaining);
     const kmThisMinute = actualDistance / minutesDiv;
-    const fuelUsed = calculateFuelConsumed(kmThisMinute, 1.9);
 
-    // Fuel & Odometer
-    s.vehicle = {
-      ...s.vehicle,
-      fuelCurrent: Math.max(0, s.vehicle.fuelCurrent - fuelUsed),
-      odometerKm: s.vehicle.odometerKm + kmThisMinute,
-    };
+    // Fuel or Battery consumption
+    if (s.vehicle.fuelType === 'electric') {
+      const batteryUsed = kmThisMinute * 1.25; // ~1.25% battery per km
+      s.vehicle = {
+        ...s.vehicle,
+        fuelCurrent: Math.max(0, s.vehicle.fuelCurrent - batteryUsed),
+        odometerKm: s.vehicle.odometerKm + kmThisMinute,
+      };
+      if (s.vehicle.fuelCurrent <= 10) {
+        s = addLog(s, `⚠️ Pin xe điện chỉ còn ${Math.round(s.vehicle.fuelCurrent)}%! Cần ghé trạm đổi pin kẻo dắt bộ.`, 'danger');
+      }
+    } else {
+      const fuelRate = s.vehicle.category === 'car' ? 6.5 : 1.9;
+      const fuelUsed = calculateFuelConsumed(kmThisMinute, fuelRate);
+      s.vehicle = {
+        ...s.vehicle,
+        fuelCurrent: Math.max(0, s.vehicle.fuelCurrent - fuelUsed),
+        odometerKm: s.vehicle.odometerKm + kmThisMinute,
+      };
+      if (s.vehicle.fuelCurrent <= 0.2) {
+        s = addLog(s, '⚠️ Cảnh báo: Kim xăng đã về vạch đỏ! Cần tìm cây xăng gấp kẻo chết máy đẩy bộ.', 'danger');
+      }
+    }
+
     // Degrade 5 parts
     s.vehicle = degradeVehicleParts(s.vehicle, kmThisMinute);
 
@@ -131,12 +181,53 @@ function advanceActiveTrip(state: GameState): GameState {
       todayKmPassenger: s.economy.todayKmPassenger + kmThisMinute,
     };
 
-    if (s.vehicle.fuelCurrent <= 0.2) {
-      s = addLog(s, '⚠️ Cảnh báo: Kim xăng đã về vạch đỏ! Cần tìm cây xăng gấp kẻo chết máy đẩy bộ.', 'danger');
+    // CSGT violation check when driving rush / shortcut
+    if (s.drivingStyle === 'rush' || s.drivingStyle === 'shortcut') {
+      const timeFormatted = formatTime24h(s.time.hour, s.time.minute);
+      const policeFine = checkPoliceViolation(
+        s.rng,
+        s.drivingStyle,
+        s.location.currentZoneId,
+        s.activeCsgtZones,
+        timeFormatted
+      );
+
+      if (policeFine) {
+        s.activePoliceFine = policeFine;
+        s.speed = 0; // Pause game for police fine notification
+        const fine = policeFine.fineAmount;
+
+        if (s.economy.cash >= fine) {
+          s.economy.cash -= fine;
+        } else {
+          s.economy.appWallet -= fine;
+        }
+        s.economy.todayExpenses.fines += fine;
+
+        const moraleReduction = getMoraleLossReduction(s.skills);
+        const moraleLoss = Math.round(15 * (1 - moraleReduction));
+        s.stats.morale = Math.max(0, s.stats.morale - moraleLoss);
+
+        s = addLog(
+          s,
+          `🚨 BỊ CSGT THỔI PHẠT: ${policeFine.reason}! Mức phạt: ${fine.toLocaleString('vi-VN')}đ. Tinh thần -${moraleLoss}.`,
+          'danger'
+        );
+        return s;
+      }
     }
 
-    // Accident check while driving
-    const accident = rollForAccident(s.stats.alertness, s.vehicle.condition, s.weather, s.time, s.rng);
+    // Accident check while driving (modified by defensive driving skill and driving style)
+    const accidentMultiplier = getAccidentRiskMultiplier(s.skills, s.drivingStyle);
+    const accident = rollForAccident(
+      s.stats.alertness,
+      s.vehicle.condition,
+      s.weather,
+      s.time,
+      s.rng,
+      accidentMultiplier
+    );
+
     if (accident) {
       s.activeAccident = accident;
       s.speed = 0; // Pause game for accident resolution
@@ -151,10 +242,12 @@ function advanceActiveTrip(state: GameState): GameState {
           fines: s.economy.todayExpenses.fines + accident.medicalCost,
         },
       };
+
+      const moraleLoss = Math.round(accident.moralePenalty * (1 - getMoraleLossReduction(s.skills)));
       s.stats = {
         ...s.stats,
         health: Math.max(0, s.stats.health - accident.healthPenalty),
-        morale: Math.max(0, s.stats.morale - accident.moralePenalty),
+        morale: Math.max(0, s.stats.morale - moraleLoss),
       };
 
       // Trip cancelled due to accident
@@ -173,6 +266,8 @@ function advanceActiveTrip(state: GameState): GameState {
   trip.stageMinutesRemaining -= 1;
 
   if (trip.stageMinutesRemaining <= 0) {
+    const travelMult = getTravelTimeMultiplier(s.skills, s.drivingStyle);
+
     if (trip.stage === 'TO_PICKUP') {
       if (trip.type === 'food') {
         trip.stage = 'AT_MERCHANT_WAITING';
@@ -181,7 +276,7 @@ function advanceActiveTrip(state: GameState): GameState {
         s = addLog(s, `Đã đến quán ăn! Đang đợi chuẩn bị món (${trip.foodItems}), dự kiến ${trip.stageMinutesRemaining} phút...`, 'info');
       } else {
         trip.stage = 'TO_DROPOFF';
-        const travelMins = calculateTravelTimeMinutes(
+        const baseMins = calculateTravelTimeMinutes(
           trip.tripDistanceKm,
           30,
           s.time,
@@ -189,6 +284,7 @@ function advanceActiveTrip(state: GameState): GameState {
           s.stats.stamina,
           s.location.routeMode
         );
+        const travelMins = Math.max(2, Math.round(baseMins * travelMult));
         trip.stageMinutesRemaining = travelMins;
         const dropZone = zonesData.find((z) => z.id === trip.dropoffZoneId);
         s.currentActivityLabel = `Chở ${trip.customerName} đến ${dropZone?.name || 'điểm trả'}`;
@@ -196,7 +292,7 @@ function advanceActiveTrip(state: GameState): GameState {
       }
     } else if (trip.stage === 'AT_MERCHANT_WAITING') {
       trip.stage = 'TO_DROPOFF';
-      const travelMins = calculateTravelTimeMinutes(
+      const baseMins = calculateTravelTimeMinutes(
         trip.tripDistanceKm,
         30,
         s.time,
@@ -204,6 +300,7 @@ function advanceActiveTrip(state: GameState): GameState {
         s.stats.stamina,
         s.location.routeMode
       );
+      const travelMins = Math.max(2, Math.round(baseMins * travelMult));
       trip.stageMinutesRemaining = travelMins;
       const dropZone = zonesData.find((z) => z.id === trip.dropoffZoneId);
       s.currentActivityLabel = `Giao đồ ăn tới ${dropZone?.name || 'khách'}`;
@@ -234,9 +331,29 @@ function advanceActiveTrip(state: GameState): GameState {
         };
       }
 
-      // Tip calculation
+      // Check food fragile damage (mitigated by itemHandling skill)
+      if (trip.type === 'food' && trip.isFragile && s.drivingStyle !== 'safe') {
+        const baseSpillChance = s.drivingStyle === 'shortcut' ? 0.15 : 0.05;
+        const spillChance = Math.max(0.01, baseSpillChance * (1 - getFoodDamageReduction(s.skills)));
+        if (nextFloat(s.rng) < spillChance) {
+          s.economy.cash = Math.max(0, s.economy.cash - 40000);
+          s.economy.todayExpenses.other += 40000;
+          s.stats.morale = Math.max(0, s.stats.morale - 6);
+          s = addLog(s, `🍜 Hộp thức ăn (${trip.foodItems}) bị xô đổ! Bạn phải tự đền 40.000đ cho khách.`, 'warning');
+        }
+      }
+
+      // Car toll fee at airport
+      if (s.vehicle.category === 'car' && trip.dropoffZoneId === 'tan_binh') {
+        s.economy.cash = Math.max(0, s.economy.cash - 15000);
+        s.economy.todayExpenses.other += 15000;
+        s = addLog(s, 'Thu phí vào bãi sân bay Tân Sơn Nhất cho ô tô: -15.000đ.', 'info');
+      }
+
+      // Tip calculation (boosted by communication skill)
       let tipAmount = 0;
-      if (nextFloat(s.rng) < trip.customerProfile.tipChance) {
+      const tipChance = trip.customerProfile.tipChance + getTipChanceBonus(s.skills);
+      if (nextFloat(s.rng) < tipChance) {
         tipAmount = Math.round(nextInt(s.rng, trip.customerProfile.tipMin, trip.customerProfile.tipMax) / 1000) * 1000;
         s.economy.cash += tipAmount;
         s.economy.todayTips += tipAmount;
@@ -262,6 +379,19 @@ function advanceActiveTrip(state: GameState): GameState {
         totalTripsCompleted: s.app.totalTripsCompleted + 1,
         activeTrip: null,
       };
+
+      // Award Skill EXP
+      const timeFormatted = formatTime24h(s.time.hour, s.time.minute);
+      s.skills = addSkillExp(s.skills, 'streetKnowledge', 8, s.logs, s.time.totalMinutes, timeFormatted);
+      s.skills = addSkillExp(s.skills, 'defensiveDriving', 5, s.logs, s.time.totalMinutes, timeFormatted);
+      if (trip.type === 'food') {
+        s.skills = addSkillExp(s.skills, 'itemHandling', 12, s.logs, s.time.totalMinutes, timeFormatted);
+      } else {
+        s.skills = addSkillExp(s.skills, 'communication', tipAmount > 0 ? 15 : 8, s.logs, s.time.totalMinutes, timeFormatted);
+      }
+      if (s.weather.type === 'heavy_rain' || s.weather.type === 'storm' || trip.isPeakHour) {
+        s.skills = addSkillExp(s.skills, 'stressResilience', 6, s.logs, s.time.totalMinutes, timeFormatted);
+      }
 
       const payNote = trip.paymentMethod === 'cash'
         ? `Nhận tiền mặt +${gross.toLocaleString('vi-VN')}đ (ví app trừ hoa hồng -${comm.toLocaleString('vi-VN')}đ)`
@@ -299,6 +429,9 @@ export function stepOneMinute(state: GameState): GameState {
   if (s.isSleeping) {
     s.stats = {
       ...s.stats,
+      stamina: Math.min(100, s.stats.stamina + 12 / 60),
+      alertness: Math.min(100, s.stats.alertness + 14 / 60),
+      hunger: Math.max(0, s.stats.hunger - 2 / 60),
       dailyHoursSlept: s.stats.dailyHoursSlept + 1 / 60,
     };
     s.sleepTargetMinutes -= 1;
@@ -306,55 +439,66 @@ export function stepOneMinute(state: GameState): GameState {
       s.isSleeping = false;
       s.currentActivityLabel = null;
       s.speed = 1;
-      s = addLog(s, 'Đã thức dậy sau giấc ngủ hồi phục! Thể lực và tinh thần được tiếp thêm năng lượng.', 'success');
+      s = addLog(s, 'Bạn đã thức dậy sau giấc ngủ say. Thể lực và Tỉnh táo đã phục hồi đáng kể!', 'success');
     }
-  }
-
-  if (s.isNapping) {
+  } else if (s.isNapping) {
+    s.stats = {
+      ...s.stats,
+      stamina: Math.min(100, s.stats.stamina + 5 / 20),
+      alertness: Math.min(100, s.stats.alertness + 15 / 20),
+    };
     s.napRemainingMinutes -= 1;
     if (s.napRemainingMinutes <= 0) {
       s.isNapping = false;
+      s.stats.lastNapMinute = s.time.totalMinutes;
       s.currentActivityLabel = null;
       s.speed = 1;
-      const napRes = applyPowerNap(s.stats, s.time.totalMinutes);
-      s.stats = napRes.stats;
-      s = addLog(s, napRes.message, 'success');
+      s = addLog(s, 'Chợp mắt xong 20 phút! Đầu óc tỉnh táo lại đôi chút để tiếp tục cuốc xe.', 'success');
     }
+  } else {
+    // 4. Update stats normally
+    const isDriving = s.app.activeTrip !== null || s.location.isTraveling;
+    const isWaiting = s.app.isOnline && !isDriving;
+    const statsRes = updateStatsPerMinute(s.stats, s.time, {
+      isDriving,
+      isWaitingForOrder: isWaiting,
+      isResting: !s.app.isOnline,
+      isSleeping: false,
+      weather: s.weather,
+      isOnline: s.app.isOnline,
+    });
+    s.stats = statsRes.stats;
   }
 
-  // 4. Update stats decay/recovery
-  const isDrivingNow = !!(s.app.activeTrip && (s.app.activeTrip.stage === 'TO_PICKUP' || s.app.activeTrip.stage === 'TO_DROPOFF'));
-  const statRes = updateStatsPerMinute(s.stats, s.time, {
-    isDriving: isDrivingNow,
-    isWaitingForOrder: s.app.isOnline && !s.app.activeTrip && !s.isSleeping,
-    isResting: !s.app.isOnline && !s.app.activeTrip && !s.isSleeping,
-    isSleeping: s.isSleeping,
-    weather: s.weather,
-    isOnline: s.app.isOnline,
-  });
-  s.stats = statRes.stats;
-
-  for (const evt of statRes.events) {
-    s = addLog(s, evt, 'danger');
-  }
-
-  // Phone battery death check
-  if (s.stats.phoneBattery <= 0 && s.app.isOnline) {
-    s.app = { ...s.app, isOnline: false };
-    s = addLog(s, '🪫 Điện thoại đã cạn kiệt pin (0%) và sập nguồn! App tự tắt, hãy tìm chỗ sạc điện thoại.', 'danger');
-  }
-
-  // 5. Hourly weather update
-  if (s.time.minute === 0) {
-    s.weather = updateWeather(s.weather, s.time.hour, s.rng);
-  }
-
-  // 6. Day cycle reset (05:00 every day)
+  // 5. Day cycle reset (05:00 every day)
   if (timeAdv.isNewDayStartHour && s.time.hour === 5 && s.time.minute === 0) {
     const hoursOnlineYesterday = s.economy.minutesOnlineToday / 60;
     const sleepRes = processDailySleepDebt(s.stats, hoursOnlineYesterday);
     s.stats = sleepRes.stats;
-    s = addLog(s, sleepRes.message, s.stats.sleepDebt > 5 ? 'warning' : 'info');
+
+    if (sleepRes.message) {
+      s = addLog(s, sleepRes.message, s.stats.sleepDebt > 5 ? 'warning' : 'info');
+    }
+
+    // Daily loan interest and installment payment
+    if (s.loan.totalPrincipal > 0) {
+      const dailyInterest = Math.round(s.loan.totalPrincipal * s.loan.dailyInterestRate);
+      s.loan = { ...s.loan, totalPrincipal: s.loan.totalPrincipal + dailyInterest };
+
+      const minPay = Math.min(50000, s.loan.totalPrincipal);
+      if (s.economy.cash >= minPay) {
+        s.economy.cash -= minPay;
+        s.loan.totalPrincipal -= minPay;
+        s = addLog(s, `🏦 Trả góp xe định kỳ hôm nay: -${minPay.toLocaleString('vi-VN')}đ (Dư nợ còn: ${s.loan.totalPrincipal.toLocaleString('vi-VN')}đ).`, 'info');
+      } else if (s.economy.appWallet >= minPay) {
+        s.economy.appWallet -= minPay;
+        s.loan.totalPrincipal -= minPay;
+        s = addLog(s, `🏦 Trích ví app thanh toán trả góp xe: -${minPay.toLocaleString('vi-VN')}đ (Dư nợ còn: ${s.loan.totalPrincipal.toLocaleString('vi-VN')}đ).`, 'info');
+      } else {
+        s.loan.daysOverdue += 1;
+        s = addLog(s, '⚠️ Không đủ tiền trả góp xe 50.000đ hôm nay! Đã bị ghi nợ quá hạn.', 'warning');
+      }
+    }
 
     const summaryRes = generateDailySummary(s.economy, s.time.day - 1, s.stats);
     s.economy = summaryRes.economy;
@@ -368,30 +512,90 @@ export function stepOneMinute(state: GameState): GameState {
     s = addLog(s, summaryText, summary.netProfit >= 0 ? 'success' : 'warning');
   }
 
-  // 7. Active Trip progression
+  // 6. CSGT checkpoint rotation & NPC news every hour / 30m
+  if (s.time.minute === 0) {
+    s.activeCsgtZones = getActiveCsgtZones(s.rng, s.time.hour);
+  }
+
+  const newNpcMsg = maybeGenerateNpcMessage(s.rng, s.time, s.weather, s.activeCsgtZones, s.npcMessages);
+  if (newNpcMsg) {
+    s.npcMessages = [newNpcMsg, ...s.npcMessages].slice(0, 30);
+  }
+
+  // 7. Update weather every 60 minutes
+  if (s.time.minute === 0) {
+    s.weather = updateWeather(s.weather, s.time.hour, s.rng);
+  }
+
+  // 8. Relocation travel
+  if (s.location.isTraveling) {
+    s.location.travelMinutesRemaining -= 1;
+    // Travel fuel/wear
+    const kmMin = 0.4;
+    if (s.vehicle.fuelType === 'electric') {
+      s.vehicle = {
+        ...s.vehicle,
+        fuelCurrent: Math.max(0, s.vehicle.fuelCurrent - (kmMin * 1.25)),
+        odometerKm: s.vehicle.odometerKm + kmMin,
+      };
+    } else {
+      const fuelRate = s.vehicle.category === 'car' ? 6.5 : 1.9;
+      s.vehicle = {
+        ...s.vehicle,
+        fuelCurrent: Math.max(0, s.vehicle.fuelCurrent - calculateFuelConsumed(kmMin, fuelRate)),
+        odometerKm: s.vehicle.odometerKm + kmMin,
+      };
+    }
+    s.vehicle = degradeVehicleParts(s.vehicle, kmMin);
+    s.economy.todayKmEmpty += kmMin;
+
+    if (s.location.travelMinutesRemaining <= 0) {
+      s.location.isTraveling = false;
+      if (s.location.targetZoneId) {
+        s.location.currentZoneId = s.location.targetZoneId;
+        s.location.targetZoneId = null;
+      }
+      s.currentActivityLabel = null;
+      const targetZone = zonesData.find((z) => z.id === s.location.currentZoneId);
+      s = addLog(s, `Đã đến khu vực: ${targetZone?.name || 'Điểm mới'}.`, 'info');
+    }
+  }
+
+  // 9. Advance active trip
   if (s.app.activeTrip) {
     s = advanceActiveTrip(s);
   }
 
-  // 8. Order Dispatch generation (if online, battery > 0, not sick, and not busy)
-  if (s.app.isOnline && !s.app.activeTrip && !s.app.currentOffer && !s.isSleeping && s.stats.phoneBattery > 0 && !s.stats.isSick) {
-    const isCooldown = s.app.cooldownUntilMinute !== null && s.time.totalMinutes < s.app.cooldownUntilMinute;
-    if (!isCooldown) {
-      const currentSpot = spotsData.find((sp) => sp.id === s.location.currentSpotId);
-      const densityMult = currentSpot?.density === 'high' ? 1.3 : currentSpot?.density === 'low' ? 0.7 : 1.0;
-      const arrivalProb = evaluateOrderArrivalProbability(s.time, s.weather, s.app, s.location.currentZoneId, s.rng, densityMult);
+  // 10. Order Dispatching
+  if (s.app.isOnline && !s.app.activeTrip && !s.location.isTraveling && !s.isSleeping && !s.stats.isSick) {
+    if (s.app.currentOffer) {
+      // Countdown tick is handled by UI / action
+    } else {
+      const isCooldown = s.app.cooldownUntilMinute !== null && s.time.totalMinutes < s.app.cooldownUntilMinute;
+      if (!isCooldown) {
+        const currentSpot = spotsData.find((sp) => sp.id === s.location.currentSpotId);
+        const densityMult = currentSpot?.density === 'high' ? 1.3 : currentSpot?.density === 'low' ? 0.7 : 1.0;
+        const arrivalProb = evaluateOrderArrivalProbability(s.time, s.weather, s.app, s.location.currentZoneId, s.rng, densityMult);
 
-      if (nextFloat(s.rng) < arrivalProb) {
-        const newOffer = generateOrderOffer(s.rng, s.time, s.weather, s.app, s.location.currentZoneId);
-        s.app = { ...s.app, currentOffer: newOffer };
-        s.speed = 1;
-        s = addLog(s, `🔔 Nổ cuốc mới! [${newOffer.type === 'food' ? 'Giao đồ ăn' : 'Chở khách'}] - Cước: ${newOffer.grossFare.toLocaleString('vi-VN')}đ (Đếm ngược 12s)`, 'event');
+        if (nextFloat(s.rng) < arrivalProb) {
+          const newOffer = generateOrderOffer(
+            s.rng,
+            s.time,
+            s.weather,
+            s.app,
+            s.location.currentZoneId,
+            s.vehicle.category
+          );
+          s.app = { ...s.app, currentOffer: newOffer };
+          s.speed = 1;
+          s = addLog(s, `🔔 Nổ cuốc mới! [${newOffer.type === 'food' ? 'Giao đồ ăn' : 'Chở khách'}] - Cước: ${newOffer.grossFare.toLocaleString('vi-VN')}đ (Đếm ngược 12s)`, 'event');
+        }
       }
     }
   }
 
-  // 9. Random Events Evaluation
-  if (!s.activeEvent && !s.activeAccident && !s.showDailySummaryModal) {
+  // 11. Random Events Evaluation
+  if (!s.activeEvent && !s.activeAccident && !s.activePoliceFine && !s.showDailySummaryModal) {
     const randomEvent = evaluateRandomEventTrigger(s, s.rng);
     if (randomEvent) {
       s.activeEvent = randomEvent;
@@ -400,7 +604,7 @@ export function stepOneMinute(state: GameState): GameState {
     }
   }
 
-  // 10. Critical stats warnings (throttled)
+  // 12. Critical stats warnings (throttled)
   if (s.time.minute % 30 === 0) {
     if (s.stats.alertness < 25) {
       s = addLog(s, '⚠️ Cực kỳ buồn ngủ (Tỉnh táo < 25%)! Bạn có nguy cơ ngủ gật giữa đường. Hãy chợp mắt hoặc uống cà phê!', 'danger');
@@ -468,7 +672,8 @@ export function dispatch(state: GameState, action: Action): GameState {
         return s;
       }
       const trip = { ...s.app.currentOffer };
-      const pickupTravelTime = calculateTravelTimeMinutes(
+      const travelMult = getTravelTimeMultiplier(s.skills, s.drivingStyle);
+      const basePickupTime = calculateTravelTimeMinutes(
         trip.pickupDistanceKm,
         30,
         s.time,
@@ -476,6 +681,7 @@ export function dispatch(state: GameState, action: Action): GameState {
         s.stats.stamina,
         s.location.routeMode
       );
+      const pickupTravelTime = Math.max(1, Math.round(basePickupTime * travelMult));
 
       trip.stage = 'TO_PICKUP';
       trip.stageMinutesRemaining = pickupTravelTime;
@@ -545,7 +751,8 @@ export function dispatch(state: GameState, action: Action): GameState {
       return s;
     }
 
-    case 'CHOOSE_EVENT_OPTION': {
+    case 'CHOOSE_EVENT_OPTION':
+    case 'CHOOSE_EVENT': {
       if (!s.activeEvent || s.activeEvent.id !== action.eventId) {
         return s;
       }
@@ -565,6 +772,30 @@ export function dispatch(state: GameState, action: Action): GameState {
       s.location = { ...s.location, routeMode: action.mode };
       const modeLabel = action.mode === 'fast' ? 'Nhanh nhất' : action.mode === 'light' ? 'Ít kẹt xe (+15% km)' : 'Tránh ngập (+25% km)';
       return addLog(s, `Đã chọn chế độ dẫn đường: ${modeLabel}.`, 'info');
+    }
+
+    case 'MOVE_TO': {
+      if (s.app.activeTrip) {
+        return addLog(s, 'Đang thực hiện cuốc xe, không thể tự chuyển vùng!', 'warning');
+      }
+      if (action.targetZoneId === s.location.currentZoneId) {
+        return s;
+      }
+      const targetZone = zonesData.find((z) => z.id === action.targetZoneId);
+      if (!targetZone) return s;
+
+      const travelMult = getTravelTimeMultiplier(s.skills, s.drivingStyle);
+      const travelMins = Math.max(3, Math.round(15 * travelMult));
+      s.location = {
+        ...s.location,
+        isTraveling: true,
+        targetZoneId: action.targetZoneId,
+        travelMinutesRemaining: travelMins,
+        currentSpotId: action.targetSpotId || null,
+        routeMode: action.routeMode || s.location.routeMode,
+      };
+      s.currentActivityLabel = `Di chuyển sang ${targetZone.name}`;
+      return addLog(s, `Bắt đầu di chuyển sang ${targetZone.name} (~${travelMins} phút)...`, 'info');
     }
 
     case 'CHARGE_PHONE': {
@@ -720,6 +951,29 @@ export function dispatch(state: GameState, action: Action): GameState {
       );
     }
 
+    case 'SWAP_BATTERY': {
+      const res = swapBattery(s.vehicle, s.economy.cash);
+      if (res.error) return addLog(s, res.error, 'warning');
+      s.vehicle = res.vehicle;
+      s.economy = {
+        ...s.economy,
+        cash: s.economy.cash - res.cost,
+        todayExpenses: {
+          ...s.economy.todayExpenses,
+          fuel: s.economy.todayExpenses.fuel + res.cost,
+        },
+      };
+      s = step(s, 3);
+      return addLog(s, '🔋 Đã đổi pin tại trạm (-15.000đ, mất 3 phút): Pin phục hồi 100%!', 'success');
+    }
+
+    case 'CHARGE_VEHICLE': {
+      const mins = action.durationMinutes || 60;
+      s.vehicle = chargeBattery(s.vehicle, mins);
+      s = step(s, mins);
+      return addLog(s, `🔌 Cắm sạc xe điện trong ${mins} phút: Pin hiện tại đạt ${Math.round(s.vehicle.fuelCurrent)}%.`, 'success');
+    }
+
     case 'SET_SPOT': {
       const spot = spotsData.find((sp) => sp.id === action.spotId);
       s.location = {
@@ -729,6 +983,101 @@ export function dispatch(state: GameState, action: Action): GameState {
       };
       const spotName = spot ? spot.name : 'Lang thang tìm khách';
       return addLog(s, `Đã chọn điểm chờ: ${spotName}.`, 'info');
+    }
+
+    // Milestone 5 Actions
+    case 'SET_DRIVING_STYLE': {
+      s.drivingStyle = action.style;
+      const label =
+        action.style === 'safe'
+          ? 'Lái an toàn (tuân thủ 100% luật)'
+          : action.style === 'rush'
+          ? 'Gấp rút (vượt đèn vàng/đỏ)'
+          : action.style === 'shortcut'
+          ? 'Đi đường tắt (ngược chiều/vỉa hè)'
+          : 'Bình thường';
+      return addLog(s, `Đã chọn phong cách chạy: ${label}.`, 'info');
+    }
+
+    case 'DISMISS_POLICE_FINE': {
+      s.activePoliceFine = null;
+      s.speed = 1;
+      return s;
+    }
+
+    case 'SET_GOAL': {
+      const goalDef = goalsData.availableGoals.find((g) => g.id === action.goalId);
+      if (!goalDef) return s;
+      s.goal = {
+        id: goalDef.id,
+        title: goalDef.title,
+        targetAmount: goalDef.targetAmount,
+        currentAmount: 0,
+        achieved: false,
+      };
+      return addLog(s, `Đã chọn mục tiêu cuộc sống mới: [${goalDef.title}] (Mục tiêu: ${goalDef.targetAmount.toLocaleString('vi-VN')}đ)!`, 'info');
+    }
+
+    case 'CONTRIBUTE_GOAL': {
+      const amt = action.amount;
+      if (s.economy.cash < amt) {
+        return addLog(s, `Không đủ tiền mặt để tích lũy ${amt.toLocaleString('vi-VN')}đ!`, 'warning');
+      }
+      s.economy.cash -= amt;
+      const timeFormatted = formatTime24h(s.time.hour, s.time.minute);
+      const res = contributeGoal(s.goal, amt, s.logs, s.time.totalMinutes, timeFormatted);
+      s.goal = res.updatedGoal;
+      if (res.updatedGoal.achieved) {
+        s.stats.morale = Math.min(100, s.stats.morale + 25);
+      }
+      return s;
+    }
+
+    case 'TAKE_EMERGENCY_LOAN': {
+      const amt = action.amount;
+      s.economy.cash += amt;
+      s.loan.totalPrincipal += amt;
+      return addLog(s, `💵 Đã nhận tiền vay khẩn cấp +${amt.toLocaleString('vi-VN')}đ vào tiền mặt. Dư nợ gốc hiện tại: ${s.loan.totalPrincipal.toLocaleString('vi-VN')}đ.`, 'warning');
+    }
+
+    case 'REPAY_LOAN': {
+      const amt = Math.min(action.amount, s.loan.totalPrincipal);
+      if (s.economy.cash < amt) {
+        return addLog(s, `Không đủ tiền mặt để trả nợ ${amt.toLocaleString('vi-VN')}đ!`, 'warning');
+      }
+      s.economy.cash -= amt;
+      s.loan.totalPrincipal -= amt;
+      return addLog(s, `Đã thanh toán nợ -${amt.toLocaleString('vi-VN')}đ. Dư nợ còn lại: ${s.loan.totalPrincipal.toLocaleString('vi-VN')}đ.`, 'success');
+    }
+
+    case 'BUY_VEHICLE': {
+      const vDef = vehiclesData.find((v) => v.id === action.vehicleId);
+      if (!vDef) return s;
+      const isInstallment = action.paymentMode === 'installment';
+      const upfrontCost = isInstallment ? (vDef.downPayment || 5000000) : vDef.price;
+      if (s.economy.cash < upfrontCost) {
+        return addLog(s, `Không đủ tiền mặt (${upfrontCost.toLocaleString('vi-VN')}đ) để mua ${vDef.name}!`, 'danger');
+      }
+      s.economy.cash -= upfrontCost;
+      if (isInstallment) {
+        const remainingDebt = vDef.price - upfrontCost;
+        s.loan.totalPrincipal += remainingDebt;
+      }
+      const newVehicle = createVehicle(vDef.id);
+      s.ownedVehicles = [...s.ownedVehicles, newVehicle];
+      s.vehicle = newVehicle;
+      return addLog(
+        s,
+        `🎉 Chúc mừng bạn đã sở hữu xe mới: ${vDef.name}! ${isInstallment ? `Trả trước ${upfrontCost.toLocaleString('vi-VN')}đ, ghi nhận nợ góp.` : 'Thanh toán đứt 100% bằng tiền mặt.'}`,
+        'success'
+      );
+    }
+
+    case 'SWITCH_VEHICLE': {
+      const found = s.ownedVehicles.find((v) => v.id === action.vehicleId);
+      if (!found) return s;
+      s.vehicle = found;
+      return addLog(s, `Đã đổi sang phương tiện: ${found.name}.`, 'info');
     }
 
     default:
@@ -751,6 +1100,7 @@ export interface ViewModel {
   activeTrip: TripOrder | null;
   activeEvent: GameState['activeEvent'];
   activeAccident: GameState['activeAccident'];
+  activePoliceFine: GameState['activePoliceFine'];
   showDailySummaryModal: boolean;
   pendingSummary: DailySummary | null;
   stats: {
@@ -770,12 +1120,22 @@ export interface ViewModel {
     isBatteryLow: boolean;
   };
   vehicle: {
+    id: string;
     name: string;
+    category: GameState['vehicle']['category'];
+    fuelType: GameState['vehicle']['fuelType'];
     fuelPercent: number;
     fuelLiters: number;
     odometerKm: number;
     condition: GameState['vehicle']['condition'];
   };
+  ownedVehicles: GameState['ownedVehicles'];
+  drivingStyle: GameState['drivingStyle'];
+  skills: GameState['skills'];
+  npcMessages: GameState['npcMessages'];
+  activeCsgtZones: string[];
+  goal: GameState['goal'];
+  loan: GameState['loan'];
   weather: {
     type: string;
     label: string;
@@ -816,6 +1176,7 @@ export function getView(state: GameState): ViewModel {
     activeTrip: state.app.activeTrip,
     activeEvent: state.activeEvent,
     activeAccident: state.activeAccident,
+    activePoliceFine: state.activePoliceFine,
     showDailySummaryModal: state.showDailySummaryModal,
     pendingSummary: state.pendingSummary,
     stats: {
@@ -835,12 +1196,22 @@ export function getView(state: GameState): ViewModel {
       isBatteryLow: state.stats.phoneBattery < 15,
     },
     vehicle: {
+      id: state.vehicle.id,
       name: state.vehicle.name,
+      category: state.vehicle.category,
+      fuelType: state.vehicle.fuelType,
       fuelPercent: Math.round((state.vehicle.fuelCurrent / state.vehicle.fuelCapacity) * 100),
       fuelLiters: Number(state.vehicle.fuelCurrent.toFixed(1)),
       odometerKm: Math.round(state.vehicle.odometerKm),
       condition: state.vehicle.condition,
     },
+    ownedVehicles: state.ownedVehicles,
+    drivingStyle: state.drivingStyle,
+    skills: state.skills,
+    npcMessages: state.npcMessages,
+    activeCsgtZones: state.activeCsgtZones,
+    goal: state.goal,
+    loan: state.loan,
     weather: {
       type: state.weather.type,
       label: weatherLabel,

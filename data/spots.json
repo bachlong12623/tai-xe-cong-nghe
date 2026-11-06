@@ -11,17 +11,6 @@
     "description": "Nhiều khách đi chơi và nhân viên văn phòng, cẩn thận trật tự đô thị"
   },
   {
-    "id": "cong_kcn",
-    "name": "Cổng KCN PouYuen / Tân Tạo",
-    "zoneId": "binh_tan",
-    "density": "high_shift",
-    "preference": "ride",
-    "safety": "high",
-    "policeRisk": "low",
-    "amenities": ["cheap_food"],
-    "description": "Cao điểm tan ca công nhân (16:30 - 18:30), đồ ăn rẻ"
-  },
-  {
     "id": "cafe_van_phong",
     "name": "Cà phê vỉa hè khu văn phòng",
     "zoneId": "q3",
@@ -31,17 +20,6 @@
     "policeRisk": "low",
     "amenities": ["coffee", "restroom"],
     "description": "Có chỗ ngồi nghỉ, sạc pin, uống nước chờ nổ cuốc"
-  },
-  {
-    "id": "san_bay",
-    "name": "Bãi đệm Sân bay Tân Sơn Nhất",
-    "zoneId": "tan_binh",
-    "density": "high_queue",
-    "preference": "ride",
-    "safety": "high",
-    "policeRisk": "high",
-    "amenities": ["restroom", "water"],
-    "description": "Cuốc đường dài giá cao nhưng phải xếp hàng chờ lâu"
   },
   {
     "id": "chung_cu_landmark",
@@ -66,15 +44,26 @@
     "description": "Tập trung dày đặc quán trà sữa và đồ ăn vặt"
   },
   {
-    "id": "pho_tay_bui_vien",
-    "name": "Khu Bar Bùi Viện",
-    "zoneId": "khu_bar_dem",
-    "density": "high_night",
+    "id": "san_bay",
+    "name": "Bãi đệm Sân bay Tân Sơn Nhất",
+    "zoneId": "tan_binh",
+    "density": "high_queue",
     "preference": "ride",
-    "safety": "low",
-    "policeRisk": "medium",
-    "amenities": ["few"],
-    "description": "Từ 22:30 đến khuya, giá cước và tip cao nhưng rủi ro khách say quậy phá"
+    "safety": "high",
+    "policeRisk": "high",
+    "amenities": ["restroom", "water"],
+    "description": "Cuốc đường dài giá cao nhưng phải xếp hàng chờ lâu"
+  },
+  {
+    "id": "cho_hanh_thong_tay",
+    "name": "Chợ đêm Hạnh Thông Tây",
+    "zoneId": "go_vap",
+    "density": "high_night",
+    "preference": "both",
+    "safety": "medium",
+    "policeRisk": "low",
+    "amenities": ["cheap_food", "water"],
+    "description": "Chợ đêm sầm uất, nhiều khách mua sắm và hàng quán ăn vặt giá rẻ"
   },
   {
     "id": "cay_xang",
@@ -86,6 +75,60 @@
     "policeRisk": "low",
     "amenities": ["gas", "restroom", "water"],
     "description": "Tiện đổ xăng, rửa mặt chợp mắt nghỉ ngơi"
+  },
+  {
+    "id": "phu_my_hung",
+    "name": "Khu Đô Thị Phú Mỹ Hưng / Crescent Mall",
+    "zoneId": "q4_7",
+    "density": "medium",
+    "preference": "both",
+    "safety": "high",
+    "policeRisk": "medium",
+    "amenities": ["coffee", "restroom"],
+    "description": "Khu dân cư hiện đại, khách lịch sự, tiền tip khá, đường rộng"
+  },
+  {
+    "id": "lang_dai_hoc",
+    "name": "Làng Đại Học & Khu Thảo Điền",
+    "zoneId": "thu_duc",
+    "density": "medium",
+    "preference": "both",
+    "safety": "high",
+    "policeRisk": "low",
+    "amenities": ["cheap_food", "restroom"],
+    "description": "Nhiều sinh viên và chuyên gia nước ngoài, cuốc đều đặn"
+  },
+  {
+    "id": "cong_kcn",
+    "name": "Cổng KCN PouYuen / Tân Tạo",
+    "zoneId": "binh_tan",
+    "density": "high_shift",
+    "preference": "ride",
+    "safety": "high",
+    "policeRisk": "low",
+    "amenities": ["cheap_food"],
+    "description": "Cao điểm tan ca công nhân (16:30 - 18:30), đồ ăn rẻ"
+  },
+  {
+    "id": "ben_xe_an_suong",
+    "name": "Bến xe An Sương / Quốc lộ 22",
+    "zoneId": "q12",
+    "density": "high_queue",
+    "preference": "ride",
+    "safety": "low",
+    "policeRisk": "high",
+    "amenities": ["restroom", "gas"],
+    "description": "Cửa ngõ Tây Bắc, cuốc đường dài đi xa, cẩn thận hàng cồng kềnh"
+  },
+  {
+    "id": "pho_tay_bui_vien",
+    "name": "Khu Bar Bùi Viện",
+    "zoneId": "khu_bar_dem",
+    "density": "high_night",
+    "preference": "ride",
+    "safety": "low",
+    "policeRisk": "medium",
+    "amenities": ["few"],
+    "description": "Từ 22:30 đến khuya, giá cước và tip cao nhưng rủi ro khách say quậy phá"
   }
 ]
-

@@ -50,6 +50,12 @@ function botDecideMinute(state: GameState, strategy: BotStrategy): GameState {
     return s;
   }
 
+  // Handle active police fine
+  if (s.activePoliceFine) {
+    s = dispatch(s, { t: 'DISMISS_POLICE_FINE' });
+    return s;
+  }
+
   // Handle active random street event
   if (s.activeEvent) {
     // Pick the most economical/safe option (usually option 0)
