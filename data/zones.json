@@ -1,0 +1,193 @@
+[
+  {
+    "id": "q1",
+    "name": "Quận 1",
+    "type": "office_food",
+    "description": "Trung tâm hành chính, cao ốc văn phòng, phố đi bộ & nhà hàng cao cấp",
+    "floodProne": false,
+    "crimeRisk": "medium",
+    "baseDemandMultiplier": 1.4,
+    "x": 250,
+    "y": 200,
+    "connections": [
+      { "target": "q3", "km": 2.5, "freeSpeedKph": 28 },
+      { "target": "q5_10", "km": 4.0, "freeSpeedKph": 30 },
+      { "target": "binh_thanh", "km": 3.8, "freeSpeedKph": 30 },
+      { "target": "q4_7", "km": 4.5, "freeSpeedKph": 32 }
+    ]
+  },
+  {
+    "id": "q3",
+    "name": "Quận 3",
+    "type": "residential_office",
+    "description": "Trục đường rợp bóng cây, nhiều quán cà phê và cơ quan hành chính",
+    "floodProne": false,
+    "crimeRisk": "low",
+    "baseDemandMultiplier": 1.2,
+    "x": 200,
+    "y": 170,
+    "connections": [
+      { "target": "q1", "km": 2.5, "freeSpeedKph": 28 },
+      { "target": "phu_nhuan", "km": 3.0, "freeSpeedKph": 30 },
+      { "target": "q5_10", "km": 3.2, "freeSpeedKph": 28 }
+    ]
+  },
+  {
+    "id": "binh_thanh",
+    "name": "Bình Thạnh",
+    "type": "highrise_mixed",
+    "description": "Khu chung cư Landmark, Hàng Xanh, đoạn Nguyễn Hữu Cảnh hay ngập",
+    "floodProne": true,
+    "crimeRisk": "low",
+    "baseDemandMultiplier": 1.25,
+    "x": 320,
+    "y": 140,
+    "connections": [
+      { "target": "q1", "km": 3.8, "freeSpeedKph": 30 },
+      { "target": "phu_nhuan", "km": 3.5, "freeSpeedKph": 32 },
+      { "target": "thu_duc", "km": 5.0, "freeSpeedKph": 38 },
+      { "target": "go_vap", "km": 6.0, "freeSpeedKph": 30 }
+    ]
+  },
+  {
+    "id": "phu_nhuan",
+    "name": "Phú Nhuận",
+    "type": "residential_food",
+    "description": "Khu Phan Xích Long sầm uất trà sữa, giao lộ kết nối sân bay",
+    "floodProne": false,
+    "crimeRisk": "low",
+    "baseDemandMultiplier": 1.15,
+    "x": 210,
+    "y": 110,
+    "connections": [
+      { "target": "q3", "km": 3.0, "freeSpeedKph": 30 },
+      { "target": "binh_thanh", "km": 3.5, "freeSpeedKph": 32 },
+      { "target": "tan_binh", "km": 3.5, "freeSpeedKph": 30 },
+      { "target": "go_vap", "km": 4.5, "freeSpeedKph": 28 }
+    ]
+  },
+  {
+    "id": "tan_binh",
+    "name": "Tân Bình (Sân Bay)",
+    "type": "airport_logistics",
+    "description": "Cửa ngõ Sân bay Tân Sơn Nhất, hay kẹt đường Trường Sơn & Cộng Hòa",
+    "floodProne": false,
+    "crimeRisk": "low",
+    "baseDemandMultiplier": 1.35,
+    "x": 130,
+    "y": 110,
+    "connections": [
+      { "target": "phu_nhuan", "km": 3.5, "freeSpeedKph": 30 },
+      { "target": "q5_10", "km": 4.5, "freeSpeedKph": 30 },
+      { "target": "go_vap", "km": 4.0, "freeSpeedKph": 28 },
+      { "target": "binh_tan", "km": 7.0, "freeSpeedKph": 35 }
+    ]
+  },
+  {
+    "id": "go_vap",
+    "name": "Gò Vấp",
+    "type": "dense_residential",
+    "description": "Khu dân cư đông đúc, chợ Hạnh Thông Tây, hẻm ngoắt ngoéo",
+    "floodProne": false,
+    "crimeRisk": "medium",
+    "baseDemandMultiplier": 1.1,
+    "x": 180,
+    "y": 50,
+    "connections": [
+      { "target": "binh_thanh", "km": 6.0, "freeSpeedKph": 30 },
+      { "target": "phu_nhuan", "km": 4.5, "freeSpeedKph": 28 },
+      { "target": "tan_binh", "km": 4.0, "freeSpeedKph": 28 },
+      { "target": "q12", "km": 6.5, "freeSpeedKph": 35 }
+    ]
+  },
+  {
+    "id": "q5_10",
+    "name": "Quận 10 & 5 (Chợ Lớn)",
+    "type": "commercial_hospital",
+    "description": "Cụm bệnh viện lớn, chợ đầu mối, ẩm thực Hoa phong phú",
+    "floodProne": false,
+    "crimeRisk": "low",
+    "baseDemandMultiplier": 1.2,
+    "x": 140,
+    "y": 230,
+    "connections": [
+      { "target": "q1", "km": 4.0, "freeSpeedKph": 30 },
+      { "target": "q3", "km": 3.2, "freeSpeedKph": 28 },
+      { "target": "tan_binh", "km": 4.5, "freeSpeedKph": 30 },
+      { "target": "binh_tan", "km": 6.0, "freeSpeedKph": 32 }
+    ]
+  },
+  {
+    "id": "q4_7",
+    "name": "Quận 7 & 4",
+    "type": "residential_highrise",
+    "description": "Phú Mỹ Hưng, đường Huỳnh Tấn Phát hay ngập triều cường",
+    "floodProne": true,
+    "crimeRisk": "medium",
+    "baseDemandMultiplier": 1.15,
+    "x": 280,
+    "y": 300,
+    "connections": [
+      { "target": "q1", "km": 4.5, "freeSpeedKph": 32 },
+      { "target": "thu_duc", "km": 8.0, "freeSpeedKph": 40 }
+    ]
+  },
+  {
+    "id": "thu_duc",
+    "name": "Thủ Đức / Thảo Điền",
+    "type": "mixed_suburban",
+    "description": "Khu Thảo Điền Tây ba lô, Làng Đại học, đường Võ Nguyên Giáp",
+    "floodProne": true,
+    "crimeRisk": "low",
+    "baseDemandMultiplier": 1.1,
+    "x": 400,
+    "y": 180,
+    "connections": [
+      { "target": "binh_thanh", "km": 5.0, "freeSpeedKph": 38 },
+      { "target": "q4_7", "km": 8.0, "freeSpeedKph": 40 }
+    ]
+  },
+  {
+    "id": "binh_tan",
+    "name": "Bình Tân",
+    "type": "industrial_worker",
+    "description": "Khu công nghiệp Tân Tạo, PouYuen, nhu cầu xe ôm cao lúc tan ca",
+    "floodProne": false,
+    "crimeRisk": "medium",
+    "baseDemandMultiplier": 1.0,
+    "x": 60,
+    "y": 260,
+    "connections": [
+      { "target": "q5_10", "km": 6.0, "freeSpeedKph": 32 },
+      { "target": "tan_binh", "km": 7.0, "freeSpeedKph": 35 }
+    ]
+  },
+  {
+    "id": "q12",
+    "name": "Quận 12 & Hóc Môn",
+    "type": "suburban_outer",
+    "description": "Ngoại thành, cuốc dài nhưng rủi ro chạy rỗng về",
+    "floodProne": false,
+    "crimeRisk": "high",
+    "baseDemandMultiplier": 0.85,
+    "x": 120,
+    "y": -10,
+    "connections": [
+      { "target": "go_vap", "km": 6.5, "freeSpeedKph": 35 }
+    ]
+  },
+  {
+    "id": "khu_bar_dem",
+    "name": "Khu Phố Tây / Bar Đêm",
+    "type": "nightlife",
+    "description": "Bùi Viện, Pasteur đêm: khách say xỉn, giá surge cao nhưng rủi ro",
+    "floodProne": false,
+    "crimeRisk": "high",
+    "baseDemandMultiplier": 1.5,
+    "x": 230,
+    "y": 230,
+    "connections": [
+      { "target": "q1", "km": 1.2, "freeSpeedKph": 20 }
+    ]
+  }
+]

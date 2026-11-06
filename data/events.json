@@ -1,0 +1,54 @@
+[
+  {
+    "id": "thung_lop",
+    "name": "Thủng lốp xe",
+    "description": "Bánh sau cán phải đinh nhọn trên cầu. Xe chao đảo may mà giữ được lái.",
+    "conditions": { "minKmDriven": 30 },
+    "options": [
+      {
+        "label": "Vá xe tại chỗ bên đường (50.000đ, 20 phút)",
+        "cost": 50000,
+        "durationMinutes": 20,
+        "effects": { "moraleDelta": -2 }
+      },
+      {
+        "label": "Dắt bộ 1.5km tìm tiệm quen (Miễn phí, 45 phút)",
+        "cost": 0,
+        "durationMinutes": 45,
+        "effects": { "staminaDelta": -15, "moraleDelta": -6 }
+      }
+    ]
+  },
+  {
+    "id": "khach_tip_lon",
+    "name": "Khách tip hào phóng",
+    "description": "Vị khách khen bạn lái êm, đi đúng giờ và gửi tặng thêm tiền tip!",
+    "options": [
+      {
+        "label": "Cảm ơn khách nồng nhiệt (+50.000đ, Tinh thần +5)",
+        "cost": -50000,
+        "durationMinutes": 2,
+        "effects": { "moraleDelta": 5 }
+      }
+    ]
+  },
+  {
+    "id": "ban_ru_nhau",
+    "name": "Bạn đồng hương rủ nhậu",
+    "description": "Mấy anh em cùng xóm trọ chạy Grab tụ tập ăn ốc, gọi điện rủ bạn qua góp vui.",
+    "options": [
+      {
+        "label": "Từ chối khéo để cày thêm cuốc",
+        "cost": 0,
+        "durationMinutes": 5,
+        "effects": { "moraleDelta": -3 }
+      },
+      {
+        "label": "Tắt app qua chung vui (Chi 150.000đ, Tinh thần +15, nghỉ hết ngày)",
+        "cost": 150000,
+        "durationMinutes": 180,
+        "effects": { "moraleDelta": 15, "forceOffline": true }
+      }
+    ]
+  }
+]

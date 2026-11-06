@@ -1,0 +1,57 @@
+{
+  "time": {
+    "startHour": 5,
+    "startMinute": 0,
+    "startDay": 1,
+    "startDayOfWeek": 1,
+    "realSecondsPerHourAt1x": 90
+  },
+  "stats": {
+    "stamina": {
+      "initial": 100,
+      "min": 0,
+      "max": 100,
+      "decayDrivingPerHour": 5.0,
+      "decayWaitingPerHour": 1.5,
+      "decayRestingPerHour": 0.5,
+      "decayHotExtraPerHour": 2.0,
+      "decayRainExtraPerHour": 2.0,
+      "recoverSleepingPerHour": 12.0,
+      "recoverNap": 5.0,
+      "criticalThreshold": 25.0
+    },
+    "hunger": {
+      "initial": 80,
+      "min": 0,
+      "max": 100,
+      "decayPerHour": 4.0,
+      "criticalThreshold": 20.0,
+      "moralePenaltyPerHourWhenHungry": 2.0
+    },
+    "alertness": {
+      "initial": 95,
+      "min": 0,
+      "max": 100,
+      "decayDayPerHour": 3.0,
+      "decayNightPerHour": 6.0,
+      "recoverSleepingPerHour": 14.0,
+      "recoverNap": 15.0,
+      "napDurationMinutes": 20,
+      "napCooldownMinutes": 240,
+      "criticalThreshold": 30.0,
+      "coffeeBoost": 20.0,
+      "coffeeCrashHours": 3.0,
+      "coffeeCrashPenalty": 15.0
+    },
+    "morale": {
+      "initial": 90,
+      "min": 0,
+      "max": 100,
+      "criticalThreshold": 30.0
+    }
+  },
+  "initialFinances": {
+    "cash": 300000,
+    "appWallet": 150000
+  }
+}

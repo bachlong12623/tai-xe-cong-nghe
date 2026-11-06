@@ -1,0 +1,74 @@
+{
+  "foods": [
+    {
+      "id": "banh_mi",
+      "name": "Bánh mì patê",
+      "price": 20000,
+      "hungerRestore": 25,
+      "moraleRestore": 0,
+      "durationMinutes": 15,
+      "description": "Gọn lẹ, no vừa đủ để chạy tiếp"
+    },
+    {
+      "id": "mi_goi",
+      "name": "Mì gói trứng",
+      "price": 15000,
+      "hungerRestore": 30,
+      "moraleRestore": 0,
+      "durationMinutes": 15,
+      "description": "Tiết kiệm tối đa, ấm bụng nhanh"
+    },
+    {
+      "id": "com_binh_dan",
+      "name": "Cơm sườn bì chả bình dân",
+      "price": 35000,
+      "hungerRestore": 45,
+      "moraleRestore": 2,
+      "durationMinutes": 25,
+      "description": "Bữa cơm chắc bụng tiêu chuẩn của tài xế"
+    },
+    {
+      "id": "quan_xin",
+      "name": "Bữa ăn quán xịn / Phở đặc biệt",
+      "price": 80000,
+      "hungerRestore": 60,
+      "moraleRestore": 5,
+      "durationMinutes": 30,
+      "description": "Tự thưởng cho bản thân sau chuỗi cuốc vất vả"
+    }
+  ],
+  "drinks": [
+    {
+      "id": "tra_da",
+      "name": "Ly trà đá vỉa hè",
+      "price": 5000,
+      "hungerRestore": 2,
+      "moraleRestore": 1,
+      "alertnessRestore": 0,
+      "durationMinutes": 5,
+      "description": "Giải khát nhanh bên lề đường"
+    },
+    {
+      "id": "ca_phe_den",
+      "name": "Cà phê đá đậm đặc",
+      "price": 15000,
+      "hungerRestore": 0,
+      "moraleRestore": 2,
+      "alertnessRestore": 20,
+      "durationMinutes": 10,
+      "isCoffee": true,
+      "description": "Tăng tỉnh táo tức thì (+20), cẩn thận sập sau 3h"
+    },
+    {
+      "id": "nuoc_tang_luc",
+      "name": "Nước tăng lực bò húc",
+      "price": 18000,
+      "hungerRestore": 0,
+      "moraleRestore": 3,
+      "alertnessRestore": 22,
+      "durationMinutes": 5,
+      "isCoffee": true,
+      "description": "Kéo lại sinh lực chạy cuốc đêm"
+    }
+  ]
+}

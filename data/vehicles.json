@@ -1,0 +1,46 @@
+[
+  {
+    "id": "wave_alpha",
+    "name": "Honda Wave Alpha",
+    "type": "motorcycle_gas",
+    "price": 18000000,
+    "fuelType": "gas",
+    "fuelCapacityLiters": 3.7,
+    "fuelConsumptionPer100Km": 1.9,
+    "comfortModifier": 1.0,
+    "description": "Rẻ, bền, đồ nghề mưu sinh quốc dân"
+  },
+  {
+    "id": "vision",
+    "name": "Honda Vision",
+    "type": "motorcycle_gas",
+    "price": 32000000,
+    "fuelType": "gas",
+    "fuelCapacityLiters": 4.9,
+    "fuelConsumptionPer100Km": 2.0,
+    "comfortModifier": 1.15,
+    "description": "Xe ga êm ái, đỡ mỏi lưng hơn khi chạy liên tục"
+  },
+  {
+    "id": "air_blade",
+    "name": "Honda Air Blade 125",
+    "type": "motorcycle_gas",
+    "price": 45000000,
+    "fuelType": "gas",
+    "fuelCapacityLiters": 4.4,
+    "fuelConsumptionPer100Km": 2.2,
+    "comfortModifier": 1.25,
+    "description": "Mạnh mẽ, cốp rộng, chạy nhanh và đầm xe"
+  },
+  {
+    "id": "xe_dien_evo",
+    "name": "VinFast Evo 200",
+    "type": "motorcycle_electric",
+    "price": 28000000,
+    "fuelType": "electric",
+    "rangeKmPerCharge": 80,
+    "swapBatteryCost": 15000,
+    "comfortModifier": 1.2,
+    "description": "Chi phí nhiên liệu siêu rẻ, cần tính toán trạm sạc"
+  }
+]

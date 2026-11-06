@@ -1,0 +1,41 @@
+{
+  "gasPricePerLiter": 23000,
+  "platformCommissionByTier": {
+    "bronze": 0.25,
+    "silver": 0.22,
+    "gold": 0.20,
+    "diamond": 0.18
+  },
+  "dispatchPriorityByTier": {
+    "bronze": 1.00,
+    "silver": 1.05,
+    "gold": 1.10,
+    "diamond": 1.15
+  },
+  "foodDelivery": {
+    "baseFee": 14000,
+    "baseDistanceKm": 2.0,
+    "perKmAfterBase": 4500,
+    "peakHourBonusRatio": 0.10,
+    "rainBonusMin": 5000,
+    "rainBonusMax": 10000
+  },
+  "passengerRide": {
+    "motorcycle": {
+      "baseFee": 12000,
+      "baseDistanceKm": 2.0,
+      "perKmAfterBase": 5000
+    },
+    "car4Seats": {
+      "baseFee": 28000,
+      "baseDistanceKm": 2.0,
+      "perKmAfterBase": 11000
+    },
+    "maxSurge": 1.8
+  },
+  "livingCosts": {
+    "rentMonthlyMin": 2500000,
+    "rentMonthlyMax": 4000000,
+    "dailyFixedEstimated": 200000
+  }
+}

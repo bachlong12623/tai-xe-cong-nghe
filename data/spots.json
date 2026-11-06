@@ -1,0 +1,90 @@
+[
+  {
+    "id": "nga_tu_trung_tam",
+    "name": "Ngã tư trung tâm (Nguyễn Huệ / Lê Lợi)",
+    "zoneId": "q1",
+    "density": "high",
+    "preference": "ride",
+    "safety": "medium",
+    "policeRisk": "medium",
+    "amenities": ["few"],
+    "description": "Nhiều khách đi chơi và nhân viên văn phòng, cẩn thận trật tự đô thị"
+  },
+  {
+    "id": "cong_kcn",
+    "name": "Cổng KCN PouYuen / Tân Tạo",
+    "zoneId": "binh_tan",
+    "density": "high_shift",
+    "preference": "ride",
+    "safety": "high",
+    "policeRisk": "low",
+    "amenities": ["cheap_food"],
+    "description": "Cao điểm tan ca công nhân (16:30 - 18:30), đồ ăn rẻ"
+  },
+  {
+    "id": "cafe_van_phong",
+    "name": "Cà phê vỉa hè khu văn phòng",
+    "zoneId": "q3",
+    "density": "medium",
+    "preference": "both",
+    "safety": "high",
+    "policeRisk": "low",
+    "amenities": ["coffee", "restroom"],
+    "description": "Có chỗ ngồi nghỉ, sạc pin, uống nước chờ nổ cuốc"
+  },
+  {
+    "id": "san_bay",
+    "name": "Bãi đệm Sân bay Tân Sơn Nhất",
+    "zoneId": "tan_binh",
+    "density": "high_queue",
+    "preference": "ride",
+    "safety": "high",
+    "policeRisk": "high",
+    "amenities": ["restroom", "water"],
+    "description": "Cuốc đường dài giá cao nhưng phải xếp hàng chờ lâu"
+  },
+  {
+    "id": "chung_cu_landmark",
+    "name": "Cụm chung cư cao tầng",
+    "zoneId": "binh_thanh",
+    "density": "medium",
+    "preference": "food",
+    "safety": "high",
+    "policeRisk": "low",
+    "amenities": ["few"],
+    "description": "Nhiều đơn đồ ăn, bảo vệ gắt gao, gửi xe tốn thời gian"
+  },
+  {
+    "id": "pho_am_thuc",
+    "name": "Phố ẩm thực Vạn Kiếp / Phan Xích Long",
+    "zoneId": "phu_nhuan",
+    "density": "high_meal",
+    "preference": "food",
+    "safety": "medium",
+    "policeRisk": "medium",
+    "amenities": ["food"],
+    "description": "Tập trung dày đặc quán trà sữa và đồ ăn vặt"
+  },
+  {
+    "id": "pho_tay_bui_vien",
+    "name": "Khu Bar Bùi Viện",
+    "zoneId": "khu_bar_dem",
+    "density": "high_night",
+    "preference": "ride",
+    "safety": "low",
+    "policeRisk": "medium",
+    "amenities": ["few"],
+    "description": "Từ 22:30 đến khuya, giá cước và tip cao nhưng rủi ro khách say quậy phá"
+  },
+  {
+    "id": "cay_xang",
+    "name": "Cây xăng & Trạm dừng nghỉ Petrolimex",
+    "zoneId": "q5_10",
+    "density": "low",
+    "preference": "both",
+    "safety": "high",
+    "policeRisk": "low",
+    "amenities": ["gas", "restroom", "water"],
+    "description": "Tiện đổ xăng, rửa mặt chợp mắt nghỉ ngơi"
+  }
+]
