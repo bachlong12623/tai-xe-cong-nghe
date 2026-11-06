@@ -175,6 +175,7 @@ export type Action =
   | { t: 'SET_SPOT'; spotId: string | null }
   | { t: 'ACCEPT_OFFER'; id: string }
   | { t: 'REJECT_OFFER'; id: string }
+  | { t: 'CANCEL_ACTIVE_TRIP' }
   | { t: 'TICK_OFFER_COUNTDOWN' }
   | { t: 'CLOSE_SUMMARY_MODAL' }
   | { t: 'CHOOSE_EVENT'; eventId: string; optionIndex: number };

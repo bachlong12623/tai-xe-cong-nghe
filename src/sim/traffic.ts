@@ -58,3 +58,4 @@ export function calculateFuelConsumed(
 ): number {
   return (distanceKm * fuelConsumptionPer100Km) / 100;
 }
+

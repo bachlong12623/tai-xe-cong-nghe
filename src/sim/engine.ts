@@ -11,7 +11,7 @@ import {
 } from './stats';
 import { createInitialVehicle, refuelVehicle } from './vehicle';
 import { createInitialEconomy, generateDailySummary } from './economy';
-import { createInitialDriverApp } from './platform';
+import { createInitialDriverApp, evaluateDriverTier, checkAccountStatus } from './platform';
 import { createInitialWeather, updateWeather } from './weather';
 import {
   TripOrder,
@@ -201,6 +201,13 @@ function advanceActiveTrip(state: GameState): GameState {
       const updatedHistory = [...s.app.ratingHistory.slice(1), ratingStars];
       const avgRating = updatedHistory.reduce((a, b) => a + b, 0) / updatedHistory.length;
 
+      // Update driver tier based on progress
+      const currentTier = evaluateDriverTier(s.app.totalTripsCompleted, s.app.rating);
+      if (currentTier !== s.app.tier) {
+        s.app = { ...s.app, tier: currentTier };
+        s = addLog(s, `🎖️ Chúc mừng! Bạn đã thăng hạng tài xế lên ${currentTier.toUpperCase()}!`, 'success');
+      }
+
       s.app = {
         ...s.app,
         ratingHistory: updatedHistory,
@@ -320,7 +327,7 @@ export function stepOneMinute(state: GameState): GameState {
     if (!isCooldown) {
       const currentSpot = spotsData.find((sp) => sp.id === s.location.currentSpotId);
       const densityMult = currentSpot?.density === 'high' ? 1.3 : currentSpot?.density === 'low' ? 0.7 : 1.0;
-      const arrivalProb = evaluateOrderArrivalProbability(s.time, s.weather, s.app, s.location.currentZoneId, densityMult);
+      const arrivalProb = evaluateOrderArrivalProbability(s.time, s.weather, s.app, s.location.currentZoneId, s.rng, densityMult);
 
       if (nextFloat(s.rng) < arrivalProb) {
         const newOffer = generateOrderOffer(s.rng, s.time, s.weather, s.app, s.location.currentZoneId);
@@ -375,8 +382,37 @@ export function dispatch(state: GameState, action: Action): GameState {
       if (s.isSleeping) {
         return addLog(s, 'Không thể bật app khi đang ngủ!', 'warning');
       }
+      if (s.app.suspendedUntilMinute !== null) {
+        if (s.time.totalMinutes < s.app.suspendedUntilMinute) {
+          const hoursLeft = ((s.app.suspendedUntilMinute - s.time.totalMinutes) / 60).toFixed(1);
+          return addLog(s, `Tài khoản đang bị tạm khóa (còn ${hoursLeft}h nữa mới mở khóa)!`, 'danger');
+        } else {
+          s.app = { ...s.app, suspendedUntilMinute: null };
+        }
+      }
       s.app = { ...s.app, isOnline: true };
       return addLog(s, '🟢 Đã bật ứng dụng tài xế: Sẵn sàng nhận cuốc!', 'success');
+    }
+
+    case 'CANCEL_ACTIVE_TRIP': {
+      if (!s.app.activeTrip) return s;
+      const tripTitle = s.app.activeTrip.title;
+      const newCancelRate = Math.min(1.0, s.app.cancellationRate + 0.05);
+      s.app = {
+        ...s.app,
+        activeTrip: null,
+        cancellationRate: Number(newCancelRate.toFixed(2)),
+      };
+      s.stats.morale = Math.max(0, s.stats.morale - 5);
+      s.currentActivityLabel = null;
+      s = addLog(s, `Bạn đã hủy cuốc ${tripTitle}. Tỷ lệ hủy tăng lên ${(newCancelRate * 100).toFixed(0)}%! Tinh thần -5.`, 'warning');
+
+      const status = checkAccountStatus(s.app);
+      if (status.warningIssued && status.message) {
+        s.app = status.app;
+        s = addLog(s, status.message, status.isSuspended ? 'danger' : 'warning');
+      }
+      return s;
     }
 
     case 'GO_OFFLINE': {

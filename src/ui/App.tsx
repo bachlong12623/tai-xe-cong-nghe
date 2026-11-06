@@ -10,7 +10,7 @@ import { DailySummaryModal } from './components/DailySummaryModal';
 import { User, Map, Smartphone, Terminal } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const { state, view, dispatch } = useGameEngine();
+  const { state, view, dispatch, saveGameNow, resetGame } = useGameEngine();
 
   // Modals state
   const [isEatModalOpen, setIsEatModalOpen] = useState(false);
@@ -22,8 +22,13 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
-      {/* Top Bar with Time, Finances, Speed */}
-      <TopBar view={view} dispatch={dispatch} />
+      {/* Top Bar with Time, Finances, Speed, Save/Reset */}
+      <TopBar
+        view={view}
+        dispatch={dispatch}
+        onSave={saveGameNow}
+        onReset={() => resetGame()}
+      />
 
       {/* Main Content Area */}
       <main className="flex-1 p-3 md:p-4 max-w-[1600px] w-full mx-auto flex flex-col gap-3">

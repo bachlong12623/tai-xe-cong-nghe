@@ -43,15 +43,16 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc tách biệt giữa **Lõi mô
 │   └── events.json            # Danh sách sự kiện ngẫu nhiên
 ├── src/
 │   ├── sim/                   # Lõi mô phỏng thuần TypeScript (headless, deterministic)
-│   │   ├── rng.ts             # Mulberry32 PRNG có seed
+│   │   ├── rng.ts             # Mulberry32 PRNG có seed, Gaussian noise
 │   │   ├── time.ts            # Hệ thống thời gian 24h, tick 1 phút, lịch tuần
 │   │   ├── stats.ts           # 4 chỉ số cơ bản + chỉ số ẩn, cà phê, nợ ngủ
-│   │   ├── orders.ts          # Sinh cuốc, định giá chở khách & đồ ăn, vòng đời cuốc xe
+│   │   ├── orders.ts          # Điểm ưu tiên phát cuốc ẩn, định giá & vòng đời cuốc xe
 │   │   ├── traffic.ts         # Tính toán thời gian di chuyển theo giờ kẹt xe & thời tiết
 │   │   ├── vehicle.ts         # Phương tiện, mức tiêu thụ xăng theo km & đổ xăng
 │   │   ├── economy.ts         # Doanh thu, chi phí, lợi nhuận thực & tổng kết ngày
 │   │   ├── demand.ts          # Nhu cầu cuốc xe theo giờ & thời tiết
-│   │   ├── platform.ts        # App tài xế, hạng tài xế, chiết khấu
+│   │   ├── platform.ts        # App tài xế, phân hạng Đồng/Bạc/Vàng/Kim Cương, kỷ luật
+│   │   ├── bot.ts             # Hệ thống Bot mô phỏng đa chiến lược chạy 7+ ngày
 │   │   ├── weather.ts         # Chuỗi Markov thời tiết & nhiệt độ TP.HCM
 │   │   ├── save.ts            # Quản lý localStorage, schema version & migration
 │   │   ├── types.ts           # Toàn bộ Interface & Action types
@@ -67,7 +68,8 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc tách biệt giữa **Lõi mô
 │   │   ├── time.test.ts
 │   │   ├── stats.test.ts
 │   │   ├── orders.test.ts
-│   │   └── engine.test.ts
+│   │   ├── engine.test.ts
+│   │   └── bot.test.ts
 ├── DECISIONS.md               # Nhật ký các quyết định kỹ thuật & thiết kế
 └── package.json
 ```
@@ -82,23 +84,21 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc tách biệt giữa **Lõi mô
 * Cà phê bùng nổ tỉnh táo rồi sập sau 3h, chợp mắt 20 phút, giấc ngủ dài và nợ ngủ `sleepDebt`.
 
 ### ✅ Mốc 2: Cuốc xe + Kinh tế cơ bản (HOÀN THÀNH)
-* **Sinh cuốc thông minh**: Tự động phát cuốc khi Online tại các Điểm chờ (theo mật độ, giờ cao điểm, thời tiết mưa gió).
-* **Thẻ cuốc đếm ngược 12 giây thực**:
-  * Đầy đủ thông số: Quãng đường đón/chở, cước hiển thị, phụ phí giờ cao điểm/mưa, điểm đến, hình thức thanh toán.
-  * Tùy chọn Nhận cuốc hoặc Bỏ qua (ảnh hưởng trực tiếp đến tỷ lệ nhận cuốc và thời gian chờ cuốc sau).
-* **Vòng đời cuốc xe hoàn chỉnh**:
-  * Giao đồ ăn: Đón quán -> Đợi làm món -> Giao khách.
-  * Chở khách: Đón khách -> Chở khách tới nơi.
-  * Tiêu hao xăng theo km lăn bánh (Wave Alpha ~1.9L/100km).
-  * Xử lý tiền cước & tip (Tiền mặt vs Ví điện tử, tự động trừ hoa hồng app theo hạng tài xế).
-* **Màn hình Tổng kết cuối ngày (Daily Summary)**:
-  * Tự động xuất hiện vào 05:00 sáng mỗi ngày.
-  * Đối chiếu trực quan: Doanh thu app vs Lợi nhuận thực tế (sau xăng, ăn uống, hoa hồng, khấu hao xe) và thu nhập thực/giờ online.
+* Sinh cuốc thông minh tại các điểm chờ; thẻ cuốc xe đếm ngược 12 giây thực.
+* Vòng đời cuốc xe hoàn chỉnh cho giao đồ ăn và chở khách.
+* Tiêu hao xăng theo km lăn bánh (Wave Alpha ~1.9L/100km).
+* Màn hình Tổng kết cuối ngày đối chiếu Doanh thu app vs Lợi nhuận thực tế.
+
+### ✅ Mốc 3: MVP Chơi Được & Bot Mô Phỏng 7 Ngày (HOÀN THÀNH)
+* **Bản đồ Graph 2D SVG**: Hiển thị đường di chuyển màu neon rực rỡ khi đang chở khách/giao đồ ăn giữa các khu vực.
+* **Thuật toán phát cuốc ẩn có nhiễu Gaussian $\varepsilon$**: Mô phỏng sự thiếu minh bạch thực tế của các app công nghệ.
+* **Hệ thống phân hạng tài xế (Đồng/Bạc/Vàng/Kim Cương)**: Thăng hạng tự động, hưởng chiết khấu ưu đãi và cảnh cáo/khóa tài khoản nếu rating thấp hoặc hủy nhiều.
+* **Lưu / Tải / Chơi lại từ đầu**: Tích hợp nút Lưu game và Reset vào TopBar.
+* **Bot mô phỏng 7 ngày (Headless Bot)**: Kiểm thử 4 chiến lược tài xế (Cân bằng, Ham chạy, Lười, Săn cao điểm) với chức năng xuất báo cáo CSV.
 
 ---
 
 ### ⏳ Các mốc tiếp theo
-* **Mốc 3 (MVP chơi được)**: Hoàn thiện Graph 8 khu vực chuyển động, dispatch score ẩn với nhiễu ngẫu nhiên, hệ thống bot mô phỏng chạy liên tục 7 ngày kiểm thử độ bền.
-* **Mốc 4 (Chiều sâu)**: Các chỉ số ẩn (`baseFatigue`, `health`), triều cường ngập nước chết máy, hao mòn 5 bộ phận phụ tùng, sự kiện ngẫu nhiên & tai nạn.
-* **Mốc 5 (Thế giới)**: CSGT/phạt, luật giao thông, 12 khu vực hoàn chỉnh, NPC tài xế chia sẻ tin tức trên nhóm chat, xe điện & ô tô.
-* **Mốc 6 (Hoàn thiện)**: Mùa vụ/Tết, thành tựu, cân bằng kinh tế cuối cùng với bot simulation đa chiến lược.
+* **Mốc 4 (Chiều sâu)**: Các chỉ số ẩn (`baseFatigue`, `health`), triều cường ngập nước chết máy, hao mòn 5 bộ phận phụ tùng, 24 sự kiện ngẫu nhiên & rủi ro tai nạn.
+* **Mốc 5 (Thế giới)**: CSGT/phạt, luật giao thông & "đi tắt", 12 khu vực mở khóa, NPC tài xế chia sẻ tin tức trên nhóm chat, xe điện & ô tô.
+* **Mốc 6 (Hoàn thiện)**: Mùa vụ/Tết, thành tựu, cân bằng kinh tế cuối cùng với bot simulation hàng trăm ngày.

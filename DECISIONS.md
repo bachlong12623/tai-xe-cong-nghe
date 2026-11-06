@@ -44,14 +44,34 @@ Tài liệu này lưu lại các quyết định kỹ thuật, giả định và
   - **Cơ chế phát cuốc (Dispatch Engine)**:
     - Tính toán xác suất $\lambda$ phát cuốc theo mật độ điểm chờ, nhu cầu giờ cao điểm (giờ cơm/giờ tan tầm), hệ số thời tiết và điểm uy tín tài xế.
     - Thẻ cuốc xe hiện lên với thanh đếm ngược **12 giây thực**.
-    - Hai loại hình cuốc: 🍔 Giao đồ ăn (có thời gian chờ quán chuẩn bị, đơn dễ hỏng, phụ phí mưa) & 🛵 Chở khách (tính cước lũy tiến, hệ số surge).
-    - Phân loại 7 nhóm tính cách khách hàng (bình thường, vội vã, nhiều đồ, khách nước ngoài, say xỉn...) ảnh hưởng đến xác suất tip và phàn nàn.
+    - Hai loại hình cuốc: 🍔 Giao đồ ăn & 🛵 Chở khách.
+    - Phân loại 7 nhóm tính cách khách hàng ảnh hưởng đến xác suất tip và phàn nàn.
   - **Vòng đời cuốc xe (Order Lifecycle)**:
     - `OFFERED` -> `ACCEPTED` -> `TO_PICKUP` -> `AT_MERCHANT_WAITING` (đồ ăn) -> `TO_DROPOFF` -> `COMPLETED`.
     - Di chuyển tiêu hao xăng thực tế (1.9L/100km cho Wave Alpha), tăng odo km lăn bánh và trừ thể lực.
-    - Xử lý dòng tiền: Tiền mặt (tài xế giữ tiền cước, ví app bị trừ hoa hồng 18-25% theo hạng) vs Ví điện tử (tiền cước net đổ thẳng vào ví app).
+    - Xử lý dòng tiền: Tiền mặt vs Ví điện tử.
   - **Màn hình Tổng kết cuối ngày (Daily Summary Modal)**:
     - Kích hoạt tự động khi chuyển giao ngày mới vào 05:00 sáng.
-    - Đặt cạnh nhau 2 con số: **Doanh thu hiển thị trên app** vs **Lợi nhuận thực tế** (sau khi trừ chiết khấu app, tiền xăng, tiền ăn uống, hao mòn vỏ lốp nhớt và khấu hao xe).
-    - Tính toán thu nhập thực tế trên mỗi giờ online.
-  - **Kiểm thử**: Đạt 23/23 tests pass 100%, test tương tác trực tiếp trên trình duyệt thành công.
+    - Đặt cạnh nhau 2 con số: **Doanh thu hiển thị trên app** vs **Lợi nhuận thực tế**.
+  - **Kiểm thử**: Đạt 23/23 tests pass 100%.
+
+## 006. Nghiệm thu Mốc 3 (MVP Chơi Được & Bot Mô Phỏng 7 Ngày)
+- **Ngày**: 06/11/2026
+- **Nội dung hoàn thành**:
+  - **Công thức điểm ưu tiên phát cuốc ẩn (Hidden Dispatch Score)**:
+    - $score = 0.35 \cdot rating\_norm + 0.25 \cdot acceptRate + 0.20 \cdot (1 - cancelRate) + 0.20 \cdot proximity\_norm + \varepsilon$ với nhiễu Gaussian $\varepsilon \sim \mathcal{N}(0, 0.2)$ mô phỏng thuật toán thực tế của app công nghệ (không minh bạch tuyệt đối).
+  - **Hệ thống phân hạng tài xế (Driver Tiers) & Kỷ luật**:
+    - Tự động thăng hạng theo tích lũy số cuốc và sao: Đồng (0-49), Bạc (>=50 & 4.8★), Vàng (>=150 & 4.85★), Kim Cương (>=300 & 4.90★).
+    - Cảnh cáo và tạm khóa tài khoản 24h nếu rating < 4.6 hoặc tỷ lệ hủy chuyến > 15%.
+    - Hỗ trợ tài xế chủ động hủy cuốc trước khi đón (`CANCEL_ACTIVE_TRIP`).
+  - **Hệ thống Bot mô phỏng đa chiến lược (Headless Multi-Day Simulation)**:
+    - Xây dựng 4 bot đại diện cho 4 phong cách tài xế:
+      1. *BalancedBot* (Cân bằng): Ăn/ngủ đủ 7h, chạy giờ hành chính $\rightarrow$ sống sót trọn vẹn 7 ngày, nợ ngủ thấp (<5h), lợi nhuận dương ổn định.
+      2. *WorkaholicBot* (Ham chạy): Cày cuốc thâu đêm, uống cà phê liên tục, ngủ ít $\rightarrow$ nợ ngủ tăng vọt (>15h), sụp đổ thể lực.
+      3. *LazyBot* (Lười): Chỉ chạy 5h ban ngày, ngủ 10h $\rightarrow$ an toàn nhưng số cuốc và thu nhập thấp hơn hẳn.
+      4. *PeakHunterBot* (Săn giờ cao điểm): Chỉ bật app lúc 07:00-09:00 và 17:00-19:30 $\rightarrow$ tối ưu thời gian/thu nhập.
+    - Xuất dữ liệu mô phỏng ra định dạng CSV chuẩn theo mục 19.
+  - **Giao diện & Lưu trữ (Save / Load / Reset)**:
+    - Bổ sung nút Lưu game, Chơi lại từ đầu trên TopBar.
+    - Bản đồ Graph 2D SVG hiển thị đường di chuyển màu neon rực rỡ khi đang thực hiện cuốc.
+  - **Kiểm thử**: Toàn bộ 28/28 unit tests pass 100%, build production thành công.

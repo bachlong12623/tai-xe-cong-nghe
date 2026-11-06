@@ -37,11 +37,11 @@ describe('Orders & Trips - Milestone 2 Specification', () => {
   });
 
   it('generates a valid order offer with 12s countdown', () => {
-    const prob = evaluateOrderArrivalProbability(dummyTime, dummyWeather, dummyApp, 'q1');
+    const rng = createRng(42);
+    const prob = evaluateOrderArrivalProbability(dummyTime, dummyWeather, dummyApp, 'q1', rng);
     expect(prob).toBeGreaterThan(0);
     expect(prob).toBeLessThan(1);
 
-    const rng = createRng(42);
     const offer = generateOrderOffer(rng, dummyTime, dummyWeather, dummyApp, 'q1');
 
     expect(offer.id).toBeDefined();

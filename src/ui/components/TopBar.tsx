@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ViewModel } from '../../sim/engine';
 import { Action } from '../../sim/types';
 import { 
@@ -11,15 +11,29 @@ import {
   Cloud, 
   CloudRain, 
   CloudLightning,
-  Power
+  Power,
+  Save,
+  RotateCcw
 } from 'lucide-react';
 
 interface TopBarProps {
   view: ViewModel;
   dispatch: (action: Action) => void;
+  onSave?: () => void;
+  onReset?: () => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ view, dispatch }) => {
+export const TopBar: React.FC<TopBarProps> = ({ view, dispatch, onSave, onReset }) => {
+  const [saveToast, setSaveToast] = useState(false);
+
+  const handleManualSave = () => {
+    if (onSave) {
+      onSave();
+      setSaveToast(true);
+      setTimeout(() => setSaveToast(false), 2000);
+    }
+  };
+
   const renderWeatherIcon = () => {
     switch (view.weather.type) {
       case 'sunny': return <Sun className="w-4 h-4 text-amber-400" />;
@@ -116,6 +130,38 @@ export const TopBar: React.FC<TopBarProps> = ({ view, dispatch }) => {
           <Power className={`w-3.5 h-3.5 ${view.isOnline ? 'animate-pulse text-white' : 'text-neutral-400'}`} />
           <span>{view.isOnline ? 'ĐANG BẬT APP' : 'TẮT APP'}</span>
         </button>
+
+        {/* Save / Reset Tools */}
+        <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-2">
+          <button
+            onClick={handleManualSave}
+            title="Lưu game vào trình duyệt"
+            className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 hover:border-neutral-700 text-neutral-300 hover:text-emerald-400 transition-colors text-xs flex items-center gap-1"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">Lưu</span>
+          </button>
+
+          {onReset && (
+            <button
+              onClick={() => {
+                if (window.confirm('Bạn có chắc chắn muốn chơi lại từ đầu không?')) {
+                  onReset();
+                }
+              }}
+              title="Chơi lại từ đầu"
+              className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 hover:border-neutral-700 text-neutral-400 hover:text-rose-400 transition-colors text-xs"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {saveToast && (
+            <span className="text-[10px] bg-emerald-500 text-black font-bold px-1.5 py-0.5 rounded animate-fadeIn">
+              Đã lưu!
+            </span>
+          )}
+        </div>
       </div>
     </header>
   );

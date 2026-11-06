@@ -86,9 +86,14 @@ export const CityMap: React.FC<CityMapProps> = ({ state, view, dispatch }) => {
             zone.connections.map((conn) => {
               const targetZone = zonesData.find((z) => z.id === conn.target);
               if (!targetZone) return null;
-              const isCurrentRoute =
-                (zone.id === currentZoneId && targetZone.id === state.location.targetZoneId) ||
-                (targetZone.id === currentZoneId && zone.id === state.location.targetZoneId);
+              
+              // Highlight route if an active trip connects these zones
+              const activeTrip = view.activeTrip;
+              const isTripRoute = activeTrip && (
+                (zone.id === activeTrip.pickupZoneId && targetZone.id === activeTrip.dropoffZoneId) ||
+                (targetZone.id === activeTrip.pickupZoneId && zone.id === activeTrip.dropoffZoneId) ||
+                (zone.id === currentZoneId && targetZone.id === activeTrip.dropoffZoneId)
+              );
 
               return (
                 <line
@@ -97,9 +102,10 @@ export const CityMap: React.FC<CityMapProps> = ({ state, view, dispatch }) => {
                   y1={zone.y + 40}
                   x2={targetZone.x}
                   y2={targetZone.y + 40}
-                  stroke={isCurrentRoute ? '#10b981' : '#2d3748'}
-                  strokeWidth={isCurrentRoute ? 3 : 1.5}
-                  strokeDasharray={isCurrentRoute ? '4 2' : undefined}
+                  stroke={isTripRoute ? '#f59e0b' : '#2d3748'}
+                  strokeWidth={isTripRoute ? 3.5 : 1.5}
+                  strokeDasharray={isTripRoute ? '5 3' : undefined}
+                  className={isTripRoute ? 'animate-pulse' : undefined}
                 />
               );
             })

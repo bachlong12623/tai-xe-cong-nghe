@@ -236,6 +236,20 @@ export const DriverAppScreen: React.FC<DriverAppScreenProps> = ({ state, view, d
                 </div>
               )}
             </div>
+
+            {/* Cancel Trip Option */}
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => {
+                  if (window.confirm('Bạn có chắc muốn hủy cuốc này không? Tỷ lệ hủy sẽ tăng và có nguy cơ bị cảnh cáo!')) {
+                    dispatch({ t: 'CANCEL_ACTIVE_TRIP' });
+                  }
+                }}
+                className="text-[10px] text-rose-400/80 hover:text-rose-300 underline font-semibold transition-colors"
+              >
+                Hủy cuốc xe này
+              </button>
+            </div>
           </div>
         ) : view.isOnline ? (
           /* CASE 3: ONLINE WAITING FOR ORDERS */

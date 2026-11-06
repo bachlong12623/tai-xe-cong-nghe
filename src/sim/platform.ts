@@ -19,6 +19,48 @@ export function createInitialDriverApp(): DriverApp {
   };
 }
 
+export function evaluateDriverTier(totalTrips: number, rating: number): DriverTier {
+  if (totalTrips >= 300 && rating >= 4.90) return 'diamond';
+  if (totalTrips >= 150 && rating >= 4.85) return 'gold';
+  if (totalTrips >= 50 && rating >= 4.80) return 'silver';
+  return 'bronze';
+}
+
+export function checkAccountStatus(app: DriverApp): { isSuspended: boolean; warningIssued: boolean; app: DriverApp; message?: string } {
+  const isRatingBad = app.rating < 4.60;
+  const isCancelHigh = app.cancellationRate > 0.15;
+
+  if (isRatingBad || isCancelHigh) {
+    const newWarnings = app.warningCount + 1;
+    if (newWarnings >= 2) {
+      // Suspend for 24 hours (1440 minutes)
+      return {
+        isSuspended: true,
+        warningIssued: true,
+        app: {
+          ...app,
+          isOnline: false,
+          warningCount: newWarnings,
+          suspendedUntilMinute: 1440, // relative to current, handled in engine
+        },
+        message: 'Tài khoản bị tạm khóa 1 ngày do tỷ lệ đánh giá thấp (<4.6) hoặc tỷ lệ hủy chuyến quá cao (>15%)!',
+      };
+    } else {
+      return {
+        isSuspended: false,
+        warningIssued: true,
+        app: {
+          ...app,
+          warningCount: newWarnings,
+        },
+        message: 'Cảnh cáo từ nền tảng: Đánh giá sao hoặc tỷ lệ hủy chuyến đang vi phạm quy định!',
+      };
+    }
+  }
+
+  return { isSuspended: false, warningIssued: false, app };
+}
+
 export function getCommissionRate(tier: DriverTier): number {
   return (pricingData.platformCommissionByTier as Record<string, number>)[tier] ?? 0.25;
 }
@@ -26,4 +68,3 @@ export function getCommissionRate(tier: DriverTier): number {
 export function getDispatchPriority(tier: DriverTier): number {
   return (pricingData.dispatchPriorityByTier as Record<string, number>)[tier] ?? 1.0;
 }
-

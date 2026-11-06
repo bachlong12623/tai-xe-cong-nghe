@@ -1,7 +1,7 @@
-import { RngState, nextFloat, nextInt, choose } from './rng';
+import { RngState, nextFloat, nextInt, choose, nextGaussian } from './rng';
 import { GameTime, WeatherState, DriverApp } from './types';
 import { getDemandForHour } from './demand';
-import { getCommissionRate } from './platform';
+import { getCommissionRate, getDispatchPriority } from './platform';
 import zonesData from '../../data/zones.json';
 import pricingData from '../../data/pricing.json';
 
@@ -203,6 +203,38 @@ export function calculateOrderFare(
 }
 
 /**
+ * Hidden priority dispatch score according to Section 7:
+ * score = 0.35·rating_norm + 0.25·acceptRate + 0.20·(1 − cancelRate) + 0.20·proximity_norm + ε (ε ~ N(0, 0.2))
+ */
+export function calculateHiddenDispatchScore(
+  app: DriverApp,
+  rng: RngState,
+  spotDensityMultiplier = 1.0
+): { score: number; dispatchFactor: number } {
+  // rating_norm: map 4.0 - 5.0 to 0.0 - 1.0
+  const ratingNorm = Math.max(0, Math.min(1.0, (app.rating - 4.0) / 1.0));
+  const acceptRate = Math.max(0, Math.min(1.0, app.acceptanceRate));
+  const cancelCompliment = Math.max(0, Math.min(1.0, 1.0 - app.cancellationRate));
+  const proximityNorm = Math.max(0, Math.min(1.0, spotDensityMultiplier / 1.3));
+
+  // Gaussian noise ε ~ N(0, 0.2) to simulate platform opacity and slight unpredictability
+  const epsilon = nextGaussian(rng, 0, 0.2);
+
+  const score =
+    0.35 * ratingNorm +
+    0.25 * acceptRate +
+    0.20 * cancelCompliment +
+    0.20 * proximityNorm +
+    epsilon;
+
+  const tierMultiplier = getDispatchPriority(app.tier);
+
+  // Map score to dispatch factor (centered around 1.0)
+  const dispatchFactor = Math.max(0.35, Math.min(2.2, (0.5 + score * 0.9) * tierMultiplier));
+  return { score, dispatchFactor };
+}
+
+/**
  * Evaluates probability of an order arriving in 1 game minute.
  */
 export function evaluateOrderArrivalProbability(
@@ -210,6 +242,7 @@ export function evaluateOrderArrivalProbability(
   weather: WeatherState,
   app: DriverApp,
   currentZoneId: string,
+  rng: RngState,
   spotDensityMultiplier = 1.0
 ): number {
   const currentZone = zonesData.find((z) => z.id === currentZoneId);
@@ -219,13 +252,12 @@ export function evaluateOrderArrivalProbability(
   const foodDemand = getDemandForHour(time.hour, 'food', time.dayOfWeek, weather);
   const avgDemand = (rideDemand + foodDemand) / 2;
 
-  // Dispatch factor based on rating & acceptance
-  const dispatchFactor = 0.8 + 0.3 * (app.rating / 5.0) + 0.2 * app.acceptanceRate;
+  // Calculate hidden score with Gaussian noise
+  const { dispatchFactor } = calculateHiddenDispatchScore(app, rng, spotDensityMultiplier);
 
   // Arrival rate per minute
-  // Base arrival chance between ~0.15 to 0.45 per minute (roughly 1 order every 2-6 minutes)
-  const lambda = 0.25 * baseZone * avgDemand * spotDensityMultiplier * dispatchFactor;
-  return Math.min(0.65, Math.max(0.08, lambda));
+  const lambda = 0.24 * baseZone * avgDemand * spotDensityMultiplier * dispatchFactor;
+  return Math.min(0.70, Math.max(0.06, lambda));
 }
 
 /**
@@ -329,3 +361,4 @@ export function generateOrderOffer(
     countdownSeconds: 12,
   };
 }
+
